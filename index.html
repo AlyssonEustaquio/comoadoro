@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Custo de Receitas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Cabeçalho -->
+        <header class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold">🍳 Controle de Receitas e Custos</h1>
+            <p class="text-emerald-100 mt-1">Atualize o preço uma vez e todas as receitas são recalculadas automaticamente</p>
+        </header>
+
+        <!-- Abas -->
+        <div class="flex flex-wrap gap-2 mb-6">
+            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="aba-ativa px-5 py-3 rounded-lg font-semibold transition">📦 Produtos</button>
+            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="bg-white px-5 py-3 rounded-lg font-semibold shadow hover:bg-gray-50 transition">📝 Receitas</button>
+        </div>
+
+        <!-- ============== ABA PRODUTOS ============== -->
+        <section id="tela-produtos" class="tela">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Formulário produto -->
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800" id="titulo-produto">➕ Adicionar Produto</h2>
+                    <form id="form-produto" onsubmit="salvarProduto(event)">
+                        <input type="hidden" id="id-produto">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Nome do produto</label>
+                                <input required id="nome-produto" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ex: Farinha de trigo">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Preço (R$)</label>
+                                    <input required type="number" step="0.01" min="0" id="preco-produto" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0,00">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium mb-1">Quantidade total</label>
+                                    <input required type="number" step="0.001" min="0.001" id="qtd-produto" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="1">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Unidade de medida</label>
+                                <select id="unidade-produto" class="w-full border rounded-lg px-3 py-2">
+                                    <option value="kg">Quilograma (kg)</option>
+                                    <option value="g">Grama (g)</option>
+                                    <option value="l">Litro (l)</option>
+                                    <option value="ml">Mililitro (ml)</option>
+                                    <option value="un">Unidade</option>
+                                    <option value="cx">Caixa</option>
+                                    <option value="pct">Pacote</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold">💾 Salvar</button>
+                                <button type="button" onclick="cancelarEdicaoProduto()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Cancelar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista produtos -->
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800">📋 Produtos Cadastrados: <span id="total-produtos" class="text-emerald-600">0</span></h2>
+                    <div id="lista-produtos" class="space-y-2 max-h-[500px] overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============== ABA RECEITAS ============== -->
+        <section id="tela-receitas" class="tela hidden">
+            <div class="grid lg:grid-cols-3 gap-6">
+                <!-- Formulário receita -->
+                <div class="bg-white p-6 rounded-xl shadow lg:col-span-1">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800" id="titulo-receita">➕ Nova Receita</h2>
+                    <form id="form-receita" onsubmit="salvarReceita(event)">
+                        <input type="hidden" id="id-receita">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Nome da receita</label>
+                                <input required id="nome-receita" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-teal-500" placeholder="Ex: Pão de queijo">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-1">Rendimento</label>
+                                <input required type="number" min="1" id="rendimento" value="1" class="w-full border rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-teal-500">
+                            </div>
+
+                            <div class="border-t pt-3 mt-3">
+                                <h3 class="font-semibold mb-2">Adicionar ingrediente</h3>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select id="ing-produto" class="col-span-2 border rounded-lg px-2 py-2 text-sm"></select>
+                                    <input type="number" step="0.001" min="0" id="ing-qtd" placeholder="Qtd" class="border rounded-lg px-2 py-2 text-sm">
+                                    <select id="ing-unidade" class="border rounded-lg px-2 py-2 text-sm">
+                                        <option value="g">g</option>
+                                        <option value="kg">kg</option>
+                                        <option value="ml">ml</option>
+                                        <option value="l">l</option>
+                                        <option value="un">un</option>
+                                    </select>
+                                </div>
+                                <button type="button" onclick="adicionarIngrediente()" class="w-full mt-2 bg-teal-600 hover:bg-teal-700 text-white text-sm py-2 rounded-lg">+ Adicionar</button>
+                            </div>
+
+                            <div>
+                                <h3 class="font-semibold mb-1">Ingredientes:</h3>
+                                <ul id="lista-ingredientes" class="space-y-1 text-sm max-h-40 overflow-y-auto"></ul>
+                            </div>
+
+                            <div class="bg-slate-100 p-3 rounded-lg">
+                                <div class="flex justify-between font-bold text-lg">
+                                    <span>Custo total:</span>
+                                    <span class="text-emerald-700" id="custo-total">R$ 0,00</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-slate-600">
+                                    <span>Custo por unidade:</span>
+                                    <span id="custo-unitario">R$ 0,00</span>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded-lg font-semibold">💾 Salvar Receita</button>
+                                <button type="button" onclick="cancelarEdicaoReceita()" class="px-4 py-2 border rounded-lg hover:bg-gray-50">Limpar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista receitas -->
+                <div class="bg-white p-6 rounded-xl shadow lg:col-span-2">
+                    <h2 class="text-lg font-bold mb-4 text-slate-800">🍽️ Receitas Cadastradas: <span id="total-receitas" class="text-teal-600">0</span></h2>
+                    <div id="lista-receitas" class="grid md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1"></div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="text-center text-xs text-slate-400 mt-8">
+            Dados armazenados apenas no seu navegador • Sistema 100% offline
+        </footer>
+    </div>
+
+    <script>
+        // ========== DADOS E ARMAZENAMENTO ==========
+        let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+        let receitas = JSON.parse(localStorage.getItem('receitas')) || [];
+        let ingredientesTemp = [];
+
+        function salvarDados() {
+            localStorage.setItem('produtos', JSON.stringify(produtos));
+            localStorage.setItem('receitas', JSON.stringify(receitas));
+        }
+
+        function gerarId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+        function moeda(v) { return `R$ ${v.toFixed(2).replace('.', ',')}`; }
+
+        // Converter tudo para mesma unidade base
+        function paraBase(qtd, unidade) {
+            switch(unidade) {
+                case 'kg': return qtd * 1000;
+                case 'g': return qtd;
+                case 'l': return qtd * 1000;
+                case 'ml': return qtd;
+                case 'un': case 'cx': case 'pct': return qtd;
+                default: return qtd;
+            }
+        }
+
+        // Preço por unidade base (grama ou ml ou unidade)
+        function precoBase(produto) {
+            const totalBase = paraBase(produto.quantidade, produto.unidade);
+            return totalBase > 0 ? produto.preco / totalBase : 0;
+        }
+
+        // Calcular custo de 1 ingrediente
+        function custoIngrediente(ing) {
+            const prod = produtos.find(p => p.id === ing.idProduto);
+            if (!prod) return 0;
+            const qtdBase = paraBase(ing.quantidade, ing.unidade);
+            return qtdBase * precoBase(prod);
+        }
+
+        // Calcular custo total da receita
+        function calcularCustoReceita(receita) {
+            return receita.ingredientes.reduce((soma, ing) => soma + custoIngrediente(ing), 0);
+        }
+
+        // ✅ ATUALIZA TODAS AS RECEITAS AUTOMATICAMENTE
+        function atualizarTodosOsCustos() {
+            receitas = receitas.map(r => ({
+                ...r,
+                custoTotal: calcularCustoReceita(r),
+                custoUnitario: calcularCustoReceita(r) / Math.max(1, r.rendimento)
+            }));
+            salvarDados();
+        }
+
+        // ========== NAVEGAÇÃO ==========
+        function mostrarAba(aba) {
+            document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('[id^="aba-"]').forEach(b => {
+                b.classList.remove('aba-ativa');
+                b.classList.add('bg-white','shadow');
+            });
+            document.getElementById(`tela-${aba}`).classList.remove('hidden');
+            const botao = document.getElementById(`aba-${aba}`);
+            botao.classList.add('aba-ativa');
+            botao.classList.remove('bg-white','shadow');
+            if (aba === 'receitas') carregarSelectProdutos();
+        }
+
+        // ========== PRODUTOS ==========
+        function salvarProduto(e) {
+            e.preventDefault();
+            const id = document.getElementById('id-produto').value;
+            const dados = {
+                id: id || gerarId(),
+                nome: document.getElementById('nome-produto').value.trim(),
+                preco: parseFloat(document.getElementById('preco-produto').value),
+                quantidade: parseFloat(document.getElementById('qtd-produto').value),
+                unidade: document.getElementById('unidade-produto').value
+            };
+
+            if (id) {
+                const i = produtos.findIndex(p => p.id === id);
+                produtos[i] = dados;
+            } else {
+                produtos.push(dados);
+            }
+
+            // ⚡ MUDOU PREÇO = RECALCULA TUDO
+            atualizarTodosOsCustos();
+            listarProdutos();
+            listarReceitas();
+            cancelarEdicaoProduto();
+        }
+
+        function editarProduto(id) {
+            const p = produtos.find(x => x.id === id);
+            document.getElementById('id-produto').value = p.id;
+            document.getElementById('nome-produto').value = p.nome;
+            document.getElementById('preco-produto').value = p.preco;
+            document.getElementById('qtd-produto').value = p.quantidade;
+            document.getElementById('unidade-produto').value = p.unidade;
+            document.getElementById('titulo-produto').textContent = '✏️ Editar Produto';
+            document.getElementById('nome-produto').focus();
+        }
+
+        function excluirProduto(id) {
+            if (!confirm('Excluir este produto? Também será removido das receitas!')) return;
+            produtos = produtos.filter(p => p.id !== id);
+            receitas.forEach(r => {
+                r.ingredientes = r.ingredientes.filter(i => i.idProduto !== id);
+            });
+            atualizarTodosOsCustos();
+            listarProdutos();
+            listarReceitas();
+        }
+
+        function cancelarEdicaoProduto() {
+            document.getElementById('form-produto').reset();
+            document.getElementById('id-produto').value = '';
+            document.getElementById('titulo-produto').textContent = '➕ Adicionar Produto';
+        }
+
+        function listarProdutos() {
+            const div = document.getElementById('lista-produtos');
+            document.getElementById('total-produtos').textContent = produtos.length;
+            if (produtos.length === 0) {
+                div.innerHTML = '<p class="text-slate-400 text-sm">Nenhum produto cadastrado</p>';
+                return;
+            }
+            div.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome)).map(p => `
+                <div class="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50">
+                    <div>
+                        <div class="font-semibold">${p.nome}</div>
+                        <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${moeda(precoBase(p))} por base</div>
+                    </div>
+                    <div class="flex gap-1">
+                        <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-2 py-1 text-sm">Editar</button>
+                        <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-2 py-1 text-sm">Excluir</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ========== RECEITAS ==========
+        function carregarSelectProdutos() {
+            const sel = document.getElementById('ing-produto');
+            sel.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome))
+                .map(p => `<option value="${p.id}">${p.nome} - ${moeda(p.preco)}/${p.quantidade}${p.unidade}</option>`).join('');
+        }
+
+        function adicionarIngrediente() {
+            const idProd = document.getElementById('ing-produto').value;
+            const qtd = parseFloat(document.getElementById('ing-qtd').value);
+            const uni = document.getElementById('ing-unidade').value;
+            if (!idProd || !qtd || qtd <=0) return alert('Preencha quantidade válida');
+            const prod = produtos.find(p => p.id === idProd);
+            ingredientesTemp.push({ idProduto: idProd, nome: prod.nome, quantidade: qtd, unidade: uni });
+            document.getElementById('ing-qtd').value = '';
+            listarIngredientesTemp();
+        }
+
+        function removerIngrediente(i) {
+            ingredientesTemp.splice(i,1);
+            listarIngredientesTemp();
+        }
+
+        function listarIngredientesTemp() {
+            const ul = document.getElementById('lista-ingredientes');
+            ul.innerHTML = ingredientesTemp.map((ing, i) => `
+                <li class="flex justify-between bg-slate-50 px-2 py-1 rounded">
+                    <span>${ing.quantidade} ${ing.unidade} - ${ing.nome} <b class="text-emerald-600">${moeda(custoIngrediente(ing))}</b></span>
+                    <button onclick="removerIngrediente(${i})" class="text-red-500 text-xs">✕</button>
+                </li>
+            `).join('');
+            const total = ingredientesTemp.reduce((s,i)=>s+custoIngrediente(i),0);
+            const rend = parseFloat(document.getElementById('rendimento').value) || 1;
+            document.getElementById('custo-total').textContent = moeda(total);
+            document.getElementById('custo-unitario').textContent = moeda(total/rend);
+        }
+
+        function salvarReceita(e) {
+            e.preventDefault();
+            if (ingredientesTemp.length === 0) return alert('Adicione pelo menos 1 ingrediente');
+            const id = document.getElementById('id-receita').value;
+            const dados = {
+                id: id || gerarId(),
+                nome: document.getElementById('nome-receita').value.trim(),
+                rendimento: parseFloat(document.getElementById('rendimento').value),
+                ingredientes: ingredientesTemp,
+                custoTotal: 0,
+                custoUnitario: 0
+            };
+            if (id) {
+                const i = receitas.findIndex(r => r.id === id);
+                receitas[i] = dados;
+            } else {
+                receitas.push(dados);
+            }
+            atualizarTodosOsCustos();
+            listarReceitas();
+            cancelarEdicaoReceita();
+        }
+
+        function editarReceita(id) {
+            const r = receitas.find(x => x.id === id);
+            document.getElementById('id-receita').value = r.id;
+            document.getElementById('nome-receita').value = r.nome;
+            document.getElementById('rendimento').value = r.rendimento;
+            ingredientesTemp = [...r.ingredientes];
+            document.getElementById('titulo-receita').textContent = '✏️ Editar Receita';
+            carregarSelectProdutos();
+            listarIngredientesTemp();
+            mostrarAba('receitas');
+        }
+
+        function excluirReceita(id) {
+            if (!confirm('Excluir esta receita?')) return;
+            receitas = receitas.filter(r => r.id !== id);
+            salvarDados();
+            listarReceitas();
+        }
+
+        function cancelarEdicaoReceita() {
+            document.getElementById('form-receita').reset();
+            document.getElementById('id-receita').value = '';
+            ingredientesTemp = [];
+            listarIngredientesTemp();
+            document.getElementById('titulo-receita').textContent = '➕ Nova Receita';
+        }
+
+        function listarReceitas() {
+            const div = document.getElementById('lista-receitas');
+            document.getElementById('total-receitas').textContent = receitas.length;
+            if (receitas.length === 0) {
+                div.innerHTML = '<p class="text-slate-400 text-sm">Nenhuma receita cadastrada</p>';
+                return;
+            }
+            div.innerHTML = receitas.sort((a,b)=>a.nome.localeCompare(b.nome)).map(r => `
+                <div class="border rounded-lg p-4 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-800">${r.nome}</h3>
+                        <div class="flex gap-1">
+                            <button onclick="editarReceita('${r.id}')" class="text-blue-600 text-xs px-2 py-1">Editar</button>
+                            <button onclick="excluirReceita('${r.id}')" class="text-red-500 text-xs px-2 py-1">Excluir</button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-500 mb-2">Rendimento: ${r.rendimento} unidades</div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded p-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-700">Custo total:</span>
+                            <span class="font-bold text-emerald-700">${moeda(r.custoTotal)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-700">Custo/unidade:</span>
+                            <span class="font-bold text-emerald-600">${moeda(r.custoUnitario)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // INICIALIZAR
+        listarProdutos();
+        listarReceitas();
+
+        // Estilo das abas ativas
+        const style = document.createElement('style');
+        style.textContent = `
+            .aba-ativa {
+                @apply bg-emerald-600 text-white shadow-lg;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
