@@ -168,6 +168,18 @@
             }
         }
 
+        // Obter unidade base para exibição
+        function getUnidadeBase(unidade) {
+            switch(unidade) {
+                case 'kg': return 'g';
+                case 'g': return 'g';
+                case 'l': return 'ml';
+                case 'ml': return 'ml';
+                case 'un': case 'cx': case 'pct': return unidade;
+                default: return unidade;
+            }
+        }
+
         // Preço por unidade base (grama ou ml ou unidade)
         function precoBase(produto) {
             const totalBase = paraBase(produto.quantidade, produto.unidade);
@@ -276,7 +288,7 @@
                 <div class="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50">
                     <div>
                         <div class="font-semibold">${p.nome}</div>
-                        <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${moeda(precoBase(p))} por base</div>
+                        <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${moeda(precoBase(p))} por ${getUnidadeBase(p.unidade)}</div>
                     </div>
                     <div class="flex gap-1">
                         <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-2 py-1 text-sm">Editar</button>
