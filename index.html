@@ -207,6 +207,7 @@
                 custoUnitario: calcularCustoReceita(r) / Math.max(1, r.rendimento)
             }));
             salvarDados();
+            listarReceitas();
         }
 
         // ========== NAVEGAÇÃO ==========
@@ -245,7 +246,6 @@
             // ⚡ MUDOU PREÇO = RECALCULA TUDO
             atualizarTodosOsCustos();
             listarProdutos();
-            listarReceitas();
             cancelarEdicaoProduto();
         }
 
@@ -268,7 +268,6 @@
             });
             atualizarTodosOsCustos();
             listarProdutos();
-            listarReceitas();
         }
 
         function cancelarEdicaoProduto() {
@@ -284,18 +283,22 @@
                 div.innerHTML = '<p class="text-slate-400 text-sm">Nenhum produto cadastrado</p>';
                 return;
             }
-            div.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome)).map(p => `
-                <div class="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50">
-                    <div>
-                        <div class="font-semibold">${p.nome}</div>
-                        <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${moeda(precoBase(p))} por ${getUnidadeBase(p.unidade)}</div>
+            div.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome)).map(p => {
+                const unidadeBase = getUnidadeBase(p.unidade);
+                const preco = moeda(precoBase(p));
+                return `
+                    <div class="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50">
+                        <div>
+                            <div class="font-semibold">${p.nome}</div>
+                            <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${preco} por ${unidadeBase}</div>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-2 py-1 text-sm">Editar</button>
+                            <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-2 py-1 text-sm">Excluir</button>
+                        </div>
                     </div>
-                    <div class="flex gap-1">
-                        <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-2 py-1 text-sm">Editar</button>
-                        <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-2 py-1 text-sm">Excluir</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         // ========== RECEITAS ==========
@@ -343,7 +346,7 @@
                 id: id || gerarId(),
                 nome: document.getElementById('nome-receita').value.trim(),
                 rendimento: parseFloat(document.getElementById('rendimento').value),
-                ingredientes: ingredientesTemp,
+                ingredientes: [...ingredientesTemp],
                 custoTotal: 0,
                 custoUnitario: 0
             };
@@ -354,7 +357,6 @@
                 receitas.push(dados);
             }
             atualizarTodosOsCustos();
-            listarReceitas();
             cancelarEdicaoReceita();
         }
 
@@ -363,7 +365,7 @@
             document.getElementById('id-receita').value = r.id;
             document.getElementById('nome-receita').value = r.nome;
             document.getElementById('rendimento').value = r.rendimento;
-            ingredientesTemp = [...r.ingredientes];
+            ingredientesTemp = JSON.parse(JSON.stringify(r.ingredientes));
             document.getElementById('titulo-receita').textContent = '✏️ Editar Receita';
             carregarSelectProdutos();
             listarIngredientesTemp();
