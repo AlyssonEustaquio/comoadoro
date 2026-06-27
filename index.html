@@ -5,25 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Custo de Receitas</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .aba-ativa {
+            background-color: #059669 !important;
+            color: white !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        }
+        .tela { display: none; }
+        .tela:not(.hidden) { display: block; }
+        button[id^="aba-"]:not(.aba-ativa) {
+            background-color: white;
+            color: #374151;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        button[id^="aba-"]:not(.aba-ativa):hover {
+            background-color: #f9fafb;
+        }
+    </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
     <div class="container mx-auto px-4 py-6 max-w-6xl">
-        <!-- Cabeçalho -->
         <header class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-6 rounded-xl shadow-lg mb-6">
             <h1 class="text-2xl md:text-3xl font-bold">🍳 Controle de Receitas e Custos</h1>
             <p class="text-emerald-100 mt-1">Atualize o preço uma vez e todas as receitas são recalculadas automaticamente</p>
         </header>
 
-        <!-- Abas -->
         <div class="flex flex-wrap gap-2 mb-6">
             <button onclick="mostrarAba('produtos')" id="aba-produtos" class="aba-ativa px-5 py-3 rounded-lg font-semibold transition">📦 Produtos</button>
-            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="bg-white px-5 py-3 rounded-lg font-semibold shadow hover:bg-gray-50 transition">📝 Receitas</button>
+            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-5 py-3 rounded-lg font-semibold transition">📝 Receitas</button>
         </div>
 
-        <!-- ============== ABA PRODUTOS ============== -->
         <section id="tela-produtos" class="tela">
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Formulário produto -->
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-lg font-bold mb-4 text-slate-800" id="titulo-produto">➕ Adicionar Produto</h2>
                     <form id="form-produto" onsubmit="salvarProduto(event)">
@@ -36,7 +49,7 @@
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-sm font-medium mb-1">Preço (R$)</label>
-                                    <input required type="number" step="0.01" min="0" id="preco-produto" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="0.00">
+                                    <input required type="number" step="0.01" min="0" id="preco-produto" class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="10.50">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium mb-1">Quantidade total</label>
@@ -50,6 +63,7 @@
                                     <option value="g">Grama (g)</option>
                                     <option value="l">Litro (l)</option>
                                     <option value="ml">Mililitro (ml)</option>
+                                    <option value="cm">Centímetro (cm)</option>
                                     <option value="un">Unidade</option>
                                     <option value="cx">Caixa</option>
                                     <option value="pct">Pacote</option>
@@ -63,7 +77,6 @@
                     </form>
                 </div>
 
-                <!-- Lista produtos -->
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-lg font-bold mb-4 text-slate-800">📋 Produtos Cadastrados: <span id="total-produtos" class="text-emerald-600">0</span></h2>
                     <div id="lista-produtos" class="space-y-2 max-h-[500px] overflow-y-auto pr-1"></div>
@@ -71,10 +84,8 @@
             </div>
         </section>
 
-        <!-- ============== ABA RECEITAS ============== -->
         <section id="tela-receitas" class="tela hidden">
             <div class="grid lg:grid-cols-3 gap-6">
-                <!-- Formulário receita -->
                 <div class="bg-white p-6 rounded-xl shadow lg:col-span-1">
                     <h2 class="text-lg font-bold mb-4 text-slate-800" id="titulo-receita">➕ Nova Receita</h2>
                     <form id="form-receita" onsubmit="salvarReceita(event)">
@@ -99,6 +110,7 @@
                                         <option value="kg">kg</option>
                                         <option value="ml">ml</option>
                                         <option value="l">l</option>
+                                        <option value="cm">cm</option>
                                         <option value="un">un</option>
                                     </select>
                                 </div>
@@ -129,7 +141,6 @@
                     </form>
                 </div>
 
-                <!-- Lista receitas -->
                 <div class="bg-white p-6 rounded-xl shadow lg:col-span-2">
                     <h2 class="text-lg font-bold mb-4 text-slate-800">🍽️ Receitas Cadastradas: <span id="total-receitas" class="text-teal-600">0</span></h2>
                     <div id="lista-receitas" class="grid md:grid-cols-2 gap-3 max-h-[600px] overflow-y-auto pr-1"></div>
@@ -143,7 +154,6 @@
     </div>
 
     <script>
-        // ========== DADOS E ARMAZENAMENTO ==========
         let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
         let receitas = JSON.parse(localStorage.getItem('receitas')) || [];
         let ingredientesTemp = [];
@@ -156,37 +166,35 @@
         function gerarId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
         function moeda(v) { return `R$ ${v.toFixed(2).replace('.', ',')}`; }
 
-        // Converter tudo para mesma unidade base
         function paraBase(qtd, unidade) {
             switch(unidade) {
                 case 'kg': return qtd * 1000;
                 case 'g': return qtd;
                 case 'l': return qtd * 1000;
                 case 'ml': return qtd;
+                case 'cm': return qtd;
                 case 'un': case 'cx': case 'pct': return qtd;
                 default: return qtd;
             }
         }
 
-        // Obter unidade base para exibição
         function getUnidadeBase(unidade) {
             switch(unidade) {
                 case 'kg': return 'g';
                 case 'g': return 'g';
                 case 'l': return 'ml';
                 case 'ml': return 'ml';
+                case 'cm': return 'cm';
                 case 'un': case 'cx': case 'pct': return unidade;
                 default: return unidade;
             }
         }
 
-        // Preço por unidade base (grama ou ml ou unidade)
         function precoBase(produto) {
             const totalBase = paraBase(produto.quantidade, produto.unidade);
             return totalBase > 0 ? produto.preco / totalBase : 0;
         }
 
-        // Calcular custo de 1 ingrediente
         function custoIngrediente(ing) {
             const prod = produtos.find(p => p.id === ing.idProduto);
             if (!prod) return 0;
@@ -194,12 +202,10 @@
             return qtdBase * precoBase(prod);
         }
 
-        // Calcular custo total da receita
         function calcularCustoReceita(receita) {
             return receita.ingredientes.reduce((soma, ing) => soma + custoIngrediente(ing), 0);
         }
 
-        // ✅ ATUALIZA TODAS AS RECEITAS AUTOMATICAMENTE
         function atualizarTodosOsCustos() {
             receitas = receitas.map(r => ({
                 ...r,
@@ -210,7 +216,6 @@
             listarReceitas();
         }
 
-        // ========== NAVEGAÇÃO ==========
         function mostrarAba(aba) {
             document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
             document.querySelectorAll('[id^="aba-"]').forEach(b => {
@@ -224,7 +229,6 @@
             if (aba === 'receitas') carregarSelectProdutos();
         }
 
-        // ========== PRODUTOS ==========
         function salvarProduto(e) {
             e.preventDefault();
             const id = document.getElementById('id-produto').value;
@@ -243,7 +247,6 @@
                 produtos.push(dados);
             }
 
-            // ⚡ MUDOU PREÇO = RECALCULA TUDO
             atualizarTodosOsCustos();
             listarProdutos();
             cancelarEdicaoProduto();
@@ -296,140 +299,3 @@
                             <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-2 py-1 text-sm">Editar</button>
                             <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-2 py-1 text-sm">Excluir</button>
                         </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // ========== RECEITAS ==========
-        function carregarSelectProdutos() {
-            const sel = document.getElementById('ing-produto');
-            sel.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome))
-                .map(p => `<option value="${p.id}">${p.nome} - ${moeda(p.preco)}/${p.quantidade}${p.unidade}</option>`).join('');
-        }
-
-        function adicionarIngrediente() {
-            const idProd = document.getElementById('ing-produto').value;
-            const qtd = parseFloat(document.getElementById('ing-qtd').value);
-            const uni = document.getElementById('ing-unidade').value;
-            if (!idProd || !qtd || qtd <=0) return alert('Preencha quantidade válida');
-            const prod = produtos.find(p => p.id === idProd);
-            ingredientesTemp.push({ idProduto: idProd, nome: prod.nome, quantidade: qtd, unidade: uni });
-            document.getElementById('ing-qtd').value = '';
-            listarIngredientesTemp();
-        }
-
-        function removerIngrediente(i) {
-            ingredientesTemp.splice(i,1);
-            listarIngredientesTemp();
-        }
-
-        function listarIngredientesTemp() {
-            const ul = document.getElementById('lista-ingredientes');
-            ul.innerHTML = ingredientesTemp.map((ing, i) => `
-                <li class="flex justify-between bg-slate-50 px-2 py-1 rounded">
-                    <span>${ing.quantidade} ${ing.unidade} - ${ing.nome} <b class="text-emerald-600">${moeda(custoIngrediente(ing))}</b></span>
-                    <button onclick="removerIngrediente(${i})" class="text-red-500 text-xs">✕</button>
-                </li>
-            `).join('');
-            const total = ingredientesTemp.reduce((s,i)=>s+custoIngrediente(i),0);
-            const rend = parseFloat(document.getElementById('rendimento').value) || 1;
-            document.getElementById('custo-total').textContent = moeda(total);
-            document.getElementById('custo-unitario').textContent = moeda(total/rend);
-        }
-
-        function salvarReceita(e) {
-            e.preventDefault();
-            if (ingredientesTemp.length === 0) return alert('Adicione pelo menos 1 ingrediente');
-            const id = document.getElementById('id-receita').value;
-            const dados = {
-                id: id || gerarId(),
-                nome: document.getElementById('nome-receita').value.trim(),
-                rendimento: parseFloat(document.getElementById('rendimento').value),
-                ingredientes: [...ingredientesTemp],
-                custoTotal: 0,
-                custoUnitario: 0
-            };
-            if (id) {
-                const i = receitas.findIndex(r => r.id === id);
-                receitas[i] = dados;
-            } else {
-                receitas.push(dados);
-            }
-            atualizarTodosOsCustos();
-            cancelarEdicaoReceita();
-        }
-
-        function editarReceita(id) {
-            const r = receitas.find(x => x.id === id);
-            document.getElementById('id-receita').value = r.id;
-            document.getElementById('nome-receita').value = r.nome;
-            document.getElementById('rendimento').value = r.rendimento;
-            ingredientesTemp = JSON.parse(JSON.stringify(r.ingredientes));
-            document.getElementById('titulo-receita').textContent = '✏️ Editar Receita';
-            carregarSelectProdutos();
-            listarIngredientesTemp();
-            mostrarAba('receitas');
-        }
-
-        function excluirReceita(id) {
-            if (!confirm('Excluir esta receita?')) return;
-            receitas = receitas.filter(r => r.id !== id);
-            salvarDados();
-            listarReceitas();
-        }
-
-        function cancelarEdicaoReceita() {
-            document.getElementById('form-receita').reset();
-            document.getElementById('id-receita').value = '';
-            ingredientesTemp = [];
-            listarIngredientesTemp();
-            document.getElementById('titulo-receita').textContent = '➕ Nova Receita';
-        }
-
-        function listarReceitas() {
-            const div = document.getElementById('lista-receitas');
-            document.getElementById('total-receitas').textContent = receitas.length;
-            if (receitas.length === 0) {
-                div.innerHTML = '<p class="text-slate-400 text-sm">Nenhuma receita cadastrada</p>';
-                return;
-            }
-            div.innerHTML = receitas.sort((a,b)=>a.nome.localeCompare(b.nome)).map(r => `
-                <div class="border rounded-lg p-4 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-bold text-slate-800">${r.nome}</h3>
-                        <div class="flex gap-1">
-                            <button onclick="editarReceita('${r.id}')" class="text-blue-600 text-xs px-2 py-1">Editar</button>
-                            <button onclick="excluirReceita('${r.id}')" class="text-red-500 text-xs px-2 py-1">Excluir</button>
-                        </div>
-                    </div>
-                    <div class="text-xs text-slate-500 mb-2">Rendimento: ${r.rendimento} unidades</div>
-                    <div class="bg-emerald-50 border border-emerald-200 rounded p-2">
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-700">Custo total:</span>
-                            <span class="font-bold text-emerald-700">${moeda(r.custoTotal)}</span>
-                        </div>
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-700">Custo/unidade:</span>
-                            <span class="font-bold text-emerald-600">${moeda(r.custoUnitario)}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // INICIALIZAR
-        listarProdutos();
-        listarReceitas();
-
-        // Estilo das abas ativas
-        const style = document.createElement('style');
-        style.textContent = `
-            .aba-ativa {
-                @apply bg-emerald-600 text-white shadow-lg;
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
-</body>
-</html>
