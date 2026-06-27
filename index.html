@@ -220,11 +220,11 @@
                                        oninput="atualizarPrecoSugerido()">
                             </div>
                             <div class="flex justify-between font-bold text-lg mt-3">
-                                <span>Preço Sugerido</span>
+                                <span>Preço Sugerido (porção)</span>
                                 <span id="preco-sugerido" class="text-green-600">R$ 0,00</span>
                             </div>
                             <div class="flex justify-between text-sm mt-2">
-                                <span>Lucro Estimado</span>
+                                <span>Lucro Estimado (porção)</span>
                                 <span id="lucro-estimado" class="font-semibold">R$ 0,00</span>
                             </div>
                         </div>
@@ -333,18 +333,20 @@
             return qtdBase * precoPorUnidadeBase(produto);
         }
 
-        // Atualizar preço sugerido
+        // Atualizar preço sugerido (agora por unidade)
         function atualizarPrecoSugerido() {
             const custoTotal = ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
             const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
             const margem = parseFloat(document.getElementById('margem-lucro').value) || 0;
             
-            document.getElementById('custo-total').textContent = moeda(custoTotal);
-            document.getElementById('custo-unitario').textContent = moeda(custoTotal / rendimento);
+            const custoUnitario = custoTotal / rendimento;
+            const precoSugerido = custoUnitario * (1 + margem / 100);
+            const lucroEstimado = precoSugerido - custoUnitario;
             
-            const precoSugerido = custoTotal * (1 + margem / 100);
+            document.getElementById('custo-total').textContent = moeda(custoTotal);
+            document.getElementById('custo-unitario').textContent = moeda(custoUnitario);
             document.getElementById('preco-sugerido').textContent = moeda(precoSugerido);
-            document.getElementById('lucro-estimado').textContent = moeda(precoSugerido - custoTotal);
+            document.getElementById('lucro-estimado').textContent = moeda(lucroEstimado);
         }
 
         // Navegação
@@ -686,7 +688,12 @@
                     filtradas.sort((a, b) => (b.custoTotal || 0) - (a.custoTotal || 0));
                     break;
                 case 'lucro-desc':
-                    filtradas.sort((a, b) => ((b.custoTotal || 0) * 1.5) - ((a.custoTotal || 0) * 1.5));
+                    // ordenar por lucro por unidade (usando margem 150%)
+                    filtradas.sort((a, b) => {
+                        const lucroA = ((a.custoTotal || 0) / a.rendimento) * 1.5;
+                        const lucroB = ((b.custoTotal || 0) / b.rendimento) * 1.5;
+                        return lucroB - lucroA;
+                    });
                     break;
                 default:
                     filtradas.sort((a, b) => a.nome.localeCompare(b.nome));
@@ -710,8 +717,9 @@
             }
             
             div.innerHTML = lista.map(r => {
-                const precoSugerido = (r.custoTotal || 0) * 2.5;
-                const lucroEstimado = precoSugerido - (r.custoTotal || 0);
+                const custoUnitario = (r.custoTotal || 0) / r.rendimento;
+                const precoSugerido = custoUnitario * 2.5; // margem de 150%
+                const lucroEstimado = precoSugerido - custoUnitario;
                 
                 return `
                     <div class="card p-6 border border-amber-100">
@@ -742,14 +750,14 @@
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">Por Porção</span>
-                                <span class="font-semibold">${moeda((r.custoTotal || 0) / r.rendimento)}</span>
+                                <span class="font-semibold">${moeda(custoUnitario)}</span>
                             </div>
                             <div class="border-t pt-2 flex justify-between">
-                                <span class="text-sm text-gray-600">Preço Sugerido</span>
+                                <span class="text-sm text-gray-600">Preço (un.)</span>
                                 <span class="font-bold text-green-600">${moeda(precoSugerido)}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-sm text-gray-600">Lucro Estimado</span>
+                                <span class="text-sm text-gray-600">Lucro (un.)</span>
                                 <span class="font-semibold text-purple-600">${moeda(lucroEstimado)}</span>
                             </div>
                         </div>
