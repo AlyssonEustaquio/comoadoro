@@ -215,17 +215,17 @@
                         </div>
                         <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-5 rounded-xl">
                             <div>
-                                <label class="block text-sm font-semibold mb-2">Preço Sugerido (R$)</label>
-                                <input type="number" step="0.01" min="0.01" id="preco-sugerido-input" value="0.00" class="input-field w-full rounded-xl px-4 py-3"
-                                       oninput="atualizarMargemLucro()">
+                                <label class="block text-sm font-semibold mb-2">Margem de Lucro (%)</label>
+                                <input type="number" id="margem-lucro" value="150" min="0" class="input-field w-full rounded-xl px-4 py-3"
+                                       oninput="atualizarPrecoSugerido()">
                             </div>
                             <div class="flex justify-between font-bold text-lg mt-3">
-                                <span>Lucro Estimado</span>
-                                <span id="lucro-estimado" class="text-green-600">R$ 0,00</span>
+                                <span>Preço Sugerido</span>
+                                <span id="preco-sugerido" class="text-green-600">R$ 0,00</span>
                             </div>
                             <div class="flex justify-between text-sm mt-2">
-                                <span>Margem de Lucro</span>
-                                <span id="margem-lucro" class="font-semibold text-blue-600">0%</span>
+                                <span>Lucro Estimado</span>
+                                <span id="lucro-estimado" class="font-semibold">R$ 0,00</span>
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg">
@@ -333,38 +333,18 @@
             return qtdBase * precoPorUnidadeBase(produto);
         }
 
-        // Calcular custo total dos ingredientes
-        function calcularCustoTotal() {
-            return ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
-        }
-
-        // Atualizar margem de lucro baseado no preço sugerido
-        function atualizarMargemLucro() {
-            const custoTotal = calcularCustoTotal();
-            const precoSugerido = parseFloat(document.getElementById('preco-sugerido-input').value) || 0;
-            
-            if (custoTotal > 0 && precoSugerido > 0) {
-                const margem = ((precoSugerido - custoTotal) / custoTotal) * 100;
-                const lucro = precoSugerido - custoTotal;
-                
-                document.getElementById('margem-lucro').textContent = `${margem.toFixed(1)}%`;
-                document.getElementById('lucro-estimado').textContent = moeda(lucro);
-            } else {
-                document.getElementById('margem-lucro').textContent = '0%';
-                document.getElementById('lucro-estimado').textContent = moeda(0);
-            }
-        }
-
-        // Atualizar preço sugerido baseado na margem (mantido para compatibilidade)
+        // Atualizar preço sugerido
         function atualizarPrecoSugerido() {
-            const custoTotal = calcularCustoTotal();
+            const custoTotal = ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
             const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
+            const margem = parseFloat(document.getElementById('margem-lucro').value) || 0;
             
             document.getElementById('custo-total').textContent = moeda(custoTotal);
             document.getElementById('custo-unitario').textContent = moeda(custoTotal / rendimento);
             
-            // Atualizar preço sugerido e margem
-            atualizarMargemLucro();
+            const precoSugerido = custoTotal * (1 + margem / 100);
+            document.getElementById('preco-sugerido').textContent = moeda(precoSugerido);
+            document.getElementById('lucro-estimado').textContent = moeda(precoSugerido - custoTotal);
         }
 
         // Navegação
@@ -628,19 +608,15 @@
                 return;
             }
             
-            const custoTotal = calcularCustoTotal();
-            const precoSugerido = parseFloat(document.getElementById('preco-sugerido-input').value) || 0;
+            const custoTotal = ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
             const id = document.getElementById('id-receita').value;
-            
             const dados = {
                 id: id || gerarId(),
                 nome,
                 rendimento,
                 ingredientes: [...ingredientesTemp],
                 custoTotal,
-                custoUnitario: custoTotal / rendimento,
-                precoSugerido,
-                lucroEstimado: precoSugerido - custoTotal
+                custoUnitario: custoTotal / rendimento
             };
             
             if (id) {
@@ -664,7 +640,7 @@
             document.getElementById('id-receita').value = receita.id;
             document.getElementById('nome-receita').value = receita.nome;
             document.getElementById('rendimento').value = receita.rendimento;
-            document.getElementById('preco-sugerido-input').value = receita.precoSugerido || 0;
+            document.getElementById('margem-lucro').value = 150;
             
             ingredientesTemp = JSON.parse(JSON.stringify(receita.ingredientes));
             document.getElementById('titulo-receita').innerHTML = '<i class="fas fa-edit text-blue-500"></i> Editar Receita';
@@ -689,7 +665,7 @@
         function cancelarEdicaoReceita() {
             document.getElementById('form-receita').reset();
             document.getElementById('id-receita').value = '';
-            document.getElementById('preco-sugerido-input').value = '0.00';
+            document.getElementById('margem-lucro').value = 150;
             ingredientesTemp = [];
             listarIngredientesTemp();
             atualizarPrecoSugerido();
@@ -710,7 +686,7 @@
                     filtradas.sort((a, b) => (b.custoTotal || 0) - (a.custoTotal || 0));
                     break;
                 case 'lucro-desc':
-                    filtradas.sort((a, b) => (b.lucroEstimado || 0) - (a.lucroEstimado || 0));
+                    filtradas.sort((a, b) => ((b.custoTotal || 0) * 1.5) - ((a.custoTotal || 0) * 1.5));
                     break;
                 default:
                     filtradas.sort((a, b) => a.nome.localeCompare(b.nome));
@@ -734,9 +710,8 @@
             }
             
             div.innerHTML = lista.map(r => {
-                const precoSugerido = r.precoSugerido || 0;
+                const precoSugerido = (r.custoTotal || 0) * 2.5;
                 const lucroEstimado = precoSugerido - (r.custoTotal || 0);
-                const margem = (r.custoTotal || 0) > 0 ? ((precoSugerido - r.custoTotal) / r.custoTotal) * 100 : 0;
                 
                 return `
                     <div class="card p-6 border border-amber-100">
@@ -776,10 +751,6 @@
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">Lucro Estimado</span>
                                 <span class="font-semibold text-purple-600">${moeda(lucroEstimado)}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm text-gray-600">Margem</span>
-                                <span class="font-semibold text-blue-600">${margem.toFixed(1)}%</span>
                             </div>
                         </div>
                     </div>
