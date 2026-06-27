@@ -224,7 +224,7 @@
                                 <span id="preco-sugerido" class="text-green-600">R$ 0,00</span>
                             </div>
                             <div class="flex justify-between text-sm mt-2">
-                                <span>Lucro Estimado (porção)</span>
+                                <span>Lucro Estimado (total)</span>
                                 <span id="lucro-estimado" class="font-semibold">R$ 0,00</span>
                             </div>
                         </div>
@@ -333,7 +333,7 @@
             return qtdBase * precoPorUnidadeBase(produto);
         }
 
-        // Atualizar preço sugerido (agora por unidade)
+        // Atualizar preço sugerido (por unidade) e lucro total
         function atualizarPrecoSugerido() {
             const custoTotal = ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
             const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
@@ -341,12 +341,12 @@
             
             const custoUnitario = custoTotal / rendimento;
             const precoSugerido = custoUnitario * (1 + margem / 100);
-            const lucroEstimado = precoSugerido - custoUnitario;
+            const lucroTotal = (precoSugerido * rendimento) - custoTotal;
             
             document.getElementById('custo-total').textContent = moeda(custoTotal);
             document.getElementById('custo-unitario').textContent = moeda(custoUnitario);
             document.getElementById('preco-sugerido').textContent = moeda(precoSugerido);
-            document.getElementById('lucro-estimado').textContent = moeda(lucroEstimado);
+            document.getElementById('lucro-estimado').textContent = moeda(lucroTotal);
         }
 
         // Navegação
@@ -688,11 +688,11 @@
                     filtradas.sort((a, b) => (b.custoTotal || 0) - (a.custoTotal || 0));
                     break;
                 case 'lucro-desc':
-                    // ordenar por lucro por unidade (usando margem 150%)
+                    // ordenar por lucro total (usando margem 150%)
                     filtradas.sort((a, b) => {
-                        const lucroA = ((a.custoTotal || 0) / a.rendimento) * 1.5;
-                        const lucroB = ((b.custoTotal || 0) / b.rendimento) * 1.5;
-                        return lucroB - lucroA;
+                        const lucroTotalA = ((a.custoTotal || 0) / a.rendimento) * 2.5 * a.rendimento - (a.custoTotal || 0);
+                        const lucroTotalB = ((b.custoTotal || 0) / b.rendimento) * 2.5 * b.rendimento - (b.custoTotal || 0);
+                        return lucroTotalB - lucroTotalA;
                     });
                     break;
                 default:
@@ -719,7 +719,7 @@
             div.innerHTML = lista.map(r => {
                 const custoUnitario = (r.custoTotal || 0) / r.rendimento;
                 const precoSugerido = custoUnitario * 2.5; // margem de 150%
-                const lucroEstimado = precoSugerido - custoUnitario;
+                const lucroTotal = (precoSugerido * r.rendimento) - (r.custoTotal || 0);
                 
                 return `
                     <div class="card p-6 border border-amber-100">
@@ -757,8 +757,8 @@
                                 <span class="font-bold text-green-600">${moeda(precoSugerido)}</span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-sm text-gray-600">Lucro (un.)</span>
-                                <span class="font-semibold text-purple-600">${moeda(lucroEstimado)}</span>
+                                <span class="text-sm text-gray-600">Lucro Total</span>
+                                <span class="font-semibold text-purple-600">${moeda(lucroTotal)}</span>
                             </div>
                         </div>
                     </div>
