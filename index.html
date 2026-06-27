@@ -7,31 +7,42 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        .aba-ativa { background-color: rgb(220 38 38); color: white; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
+        body {
+            background: linear-gradient(135deg, #facc15, #eab308);
+        }
+        .aba-ativa { 
+            background-color: rgb(220 38 38); 
+            color: white; 
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); 
+        }
+        .card {
+            background: white;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
+<body class="min-h-screen">
     <div class="container mx-auto px-4 py-6 max-w-6xl">
-        <header class="bg-gradient-to-r from-red-600 to-rose-600 text-white p-6 rounded-3xl shadow-xl mb-8 flex items-center gap-6">
-            <img src="logo.jpg" alt="Buffet Como Adoro" class="w-24 h-24 rounded-2xl border-4 border-yellow-300 shadow-md object-cover">
+        <header class="bg-white/90 backdrop-blur-md text-slate-900 p-6 rounded-3xl shadow-2xl mb-8 flex items-center gap-6 border-4 border-amber-800">
+            <img src="logo.jpg" alt="Buffet Como Adoro" class="w-24 h-24 rounded-2xl border-4 border-amber-800 shadow-md object-cover">
             <div>
                 <h1 class="text-4xl font-bold">Buffet Como Adoro</h1>
-                <p class="text-yellow-100 text-xl">Controle de Receitas e Custos</p>
+                <p class="text-amber-900 text-xl">Controle de Receitas e Custos</p>
             </div>
         </header>
 
         <div class="flex flex-wrap gap-2 mb-8">
-            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="aba-ativa px-8 py-4 rounded-2xl font-semibold text-lg">📦 Produtos</button>
-            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-8 py-4 rounded-2xl font-semibold shadow hover:bg-gray-50 transition text-lg">📝 Receitas</button>
+            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="aba-ativa px-8 py-4 rounded-2xl font-semibold text-lg shadow-md">📦 Ingredientes</button>
+            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-8 py-4 rounded-2xl font-semibold shadow-md hover:bg-white/80 transition text-lg bg-white/90">📝 Receitas</button>
         </div>
 
         <section id="tela-produtos" class="tela">
             <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-white p-8 rounded-3xl shadow">
-                    <h2 class="text-2xl font-bold mb-6 text-slate-800" id="titulo-produto">➕ Novo Produto</h2>
+                <div class="card p-8 rounded-3xl border border-amber-200">
+                    <h2 class="text-2xl font-bold mb-6 text-slate-800" id="titulo-produto">➕ Novo Ingrediente</h2>
                     <form id="form-produto" onsubmit="salvarProduto(event)" class="space-y-5">
                         <input type="hidden" id="id-produto">
-                        <input required id="nome-produto" class="w-full border border-slate-300 rounded-2xl px-5 py-4" placeholder="Nome do produto">
+                        <input required id="nome-produto" class="w-full border border-slate-300 rounded-2xl px-5 py-4" placeholder="Nome do ingrediente">
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm mb-2">Preço (R$)</label>
@@ -49,12 +60,12 @@
                             <option value="ml">ml - Mililitro</option>
                             <option value="un">un - Unidade</option>
                         </select>
-                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold text-lg">Salvar Produto</button>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold text-lg shadow-md">Salvar Ingrediente</button>
                     </form>
                 </div>
 
-                <div class="bg-white p-8 rounded-3xl shadow">
-                    <h2 class="text-2xl font-bold mb-6">Produtos Cadastrados (<span id="total-produtos">0</span>)</h2>
+                <div class="card p-8 rounded-3xl border border-amber-200">
+                    <h2 class="text-2xl font-bold mb-6">Ingredientes Cadastrados (<span id="total-produtos">0</span>)</h2>
                     <div id="lista-produtos" class="space-y-4 max-h-[550px] overflow-auto"></div>
                 </div>
             </div>
@@ -62,7 +73,7 @@
 
         <section id="tela-receitas" class="tela hidden">
             <div class="grid lg:grid-cols-3 gap-6">
-                <div class="bg-white p-8 rounded-3xl shadow lg:col-span-1">
+                <div class="card p-8 rounded-3xl border border-amber-200 lg:col-span-1">
                     <h2 class="text-2xl font-bold mb-6 text-slate-800" id="titulo-receita">➕ Nova Receita</h2>
                     <form id="form-receita" onsubmit="salvarReceita(event)" class="space-y-5">
                         <input type="hidden" id="id-receita">
@@ -100,11 +111,11 @@
                                 <span id="custo-unitario">R$ 0,00</span>
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold text-lg">Salvar Receita</button>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white py-4 rounded-2xl font-bold text-lg shadow-md">Salvar Receita</button>
                     </form>
                 </div>
 
-                <div class="bg-white p-8 rounded-3xl shadow lg:col-span-2">
+                <div class="card p-8 rounded-3xl border border-amber-200 lg:col-span-2">
                     <h2 class="text-2xl font-bold mb-6">Receitas Cadastradas (<span id="total-receitas">0</span>)</h2>
                     <div id="lista-receitas" class="grid md:grid-cols-2 gap-4"></div>
                 </div>
@@ -218,11 +229,11 @@
             document.getElementById('preco-produto').value = p.preco;
             document.getElementById('qtd-produto').value = p.quantidade;
             document.getElementById('unidade-produto').value = p.unidade;
-            document.getElementById('titulo-produto').textContent = '✏️ Editar Produto';
+            document.getElementById('titulo-produto').textContent = '✏️ Editar Ingrediente';
         }
 
         function excluirProduto(id) {
-            if (!confirm('Excluir este produto?')) return;
+            if (!confirm('Excluir este ingrediente?')) return;
             produtos = produtos.filter(p => p.id !== id);
             receitas.forEach(r => r.ingredientes = r.ingredientes.filter(i => i.idProduto !== id));
             atualizarTodosOsCustos();
@@ -232,21 +243,21 @@
         function cancelarEdicaoProduto() {
             document.getElementById('form-produto').reset();
             document.getElementById('id-produto').value = '';
-            document.getElementById('titulo-produto').textContent = '➕ Novo Produto';
+            document.getElementById('titulo-produto').textContent = '➕ Novo Ingrediente';
         }
 
         function listarProdutos() {
             const div = document.getElementById('lista-produtos');
             document.getElementById('total-produtos').textContent = produtos.length;
             if (produtos.length === 0) {
-                div.innerHTML = '<p class="text-slate-400 py-8 text-center">Nenhum produto cadastrado</p>';
+                div.innerHTML = '<p class="text-slate-400 py-8 text-center">Nenhum ingrediente cadastrado</p>';
                 return;
             }
             div.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome)).map(p => {
                 const unidadeBase = getUnidadeBase(p.unidade);
                 const precoPorBase = moeda(precoBase(p));
                 return `
-                    <div class="flex justify-between items-center border border-slate-200 rounded-2xl p-5 hover:bg-slate-50">
+                    <div class="flex justify-between items-center border border-amber-200 rounded-2xl p-5 hover:bg-amber-50">
                         <div>
                             <div class="font-semibold">${p.nome}</div>
                             <div class="text-sm text-slate-500">${moeda(p.preco)} / ${p.quantidade}${p.unidade} → ${precoPorBase} por ${unidadeBase}</div>
@@ -354,7 +365,7 @@
                 return;
             }
             div.innerHTML = receitas.sort((a,b)=>a.nome.localeCompare(b.nome)).map(r => `
-                <div class="border border-slate-200 rounded-3xl p-6">
+                <div class="border border-amber-200 rounded-3xl p-6 shadow-sm bg-white">
                     <div class="flex justify-between">
                         <h3 class="font-bold text-lg">${r.nome}</h3>
                         <div>
