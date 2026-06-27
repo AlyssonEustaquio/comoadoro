@@ -7,20 +7,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        
         body { font-family: 'Inter', system-ui, sans-serif; background-color: #f8fafc; }
         .aba-ativa { background-color: rgb(220 38 38); color: white; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }
-        
-        input:focus, select:focus {
-            border-color: rgb(220 38 38);
-            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
-            outline: none;
-        }
-        
-        .card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-        }
+        input:focus, select:focus { border-color: rgb(220 38 38); box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2); outline: none; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
     </style>
 </head>
 <body class="min-h-screen">
@@ -36,14 +26,14 @@
 
         <!-- Abas -->
         <div class="flex flex-wrap gap-2 mb-8 border-b border-yellow-300">
-            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="aba-ativa px-6 py-4 rounded-t-2xl font-bold text-lg flex items-center gap-2 transition">📦 Produtos</button>
-            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-6 py-4 rounded-t-2xl font-bold text-lg flex items-center gap-2 hover:bg-white transition">📝 Receitas</button>
+            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="aba-ativa px-6 py-4 rounded-t-2xl font-bold text-lg flex items-center gap-2">📦 Produtos</button>
+            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-6 py-4 rounded-t-2xl font-bold text-lg flex items-center gap-2 hover:bg-white">📝 Receitas</button>
         </div>
 
         <!-- ABA PRODUTOS -->
         <section id="tela-produtos" class="tela">
             <div class="grid md:grid-cols-2 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow border border-yellow-200 card">
+                <div class="bg-white p-6 rounded-2xl shadow border border-yellow-200">
                     <h2 class="text-xl font-bold mb-5 text-red-700" id="titulo-produto">➕ Adicionar Produto</h2>
                     <form id="form-produto" onsubmit="salvarProduto(event)">
                         <input type="hidden" id="id-produto">
@@ -92,7 +82,7 @@
         <!-- ABA RECEITAS -->
         <section id="tela-receitas" class="tela hidden">
             <div class="grid lg:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-2xl shadow border border-yellow-200 lg:col-span-1 card">
+                <div class="bg-white p-6 rounded-2xl shadow border border-yellow-200 lg:col-span-1">
                     <h2 class="text-xl font-bold mb-5 text-red-700" id="titulo-receita">➕ Nova Receita</h2>
                     <form id="form-receita" onsubmit="salvarReceita(event)">
                         <input type="hidden" id="id-receita">
@@ -155,7 +145,6 @@
     </div>
 
     <script>
-        // Todo o JavaScript (mesmo de antes)
         let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
         let receitas = JSON.parse(localStorage.getItem('receitas')) || [];
         let ingredientesTemp = [];
@@ -185,7 +174,6 @@
                 case 'g': return 'kg';
                 case 'l': return 'l';
                 case 'ml': return 'l';
-                case 'un': case 'cx': case 'pct': return unidade;
                 default: return unidade;
             }
         }
@@ -298,8 +286,8 @@
                             <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${preco} por ${unidadeBase}</div>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-3 py-1 text-sm font-medium">Editar</button>
-                            <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-3 py-1 text-sm font-medium">Excluir</button>
+                            <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-3 py-1 text-sm">Editar</button>
+                            <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-3 py-1 text-sm">Excluir</button>
                         </div>
                     </div>
                 `;
@@ -401,7 +389,7 @@
             div.innerHTML = receitas.sort((a,b)=>a.nome.localeCompare(b.nome)).map(r => `
                 <div class="border border-yellow-200 rounded-2xl p-5 bg-white hover:shadow-md transition card">
                     <div class="flex justify-between items-start">
-                        <h3 class="font-bold text-lg text-slate-800">${r.nome}</h3>
+                        <h3 class="font-bold text-lg">${r.nome}</h3>
                         <div class="flex gap-2">
                             <button onclick="editarReceita('${r.id}')" class="text-blue-600 text-sm">Editar</button>
                             <button onclick="excluirReceita('${r.id}')" class="text-red-500 text-sm">Excluir</button>
@@ -422,6 +410,7 @@
             `).join('');
         }
 
+        // Inicialização
         listarProdutos();
         listarReceitas();
     </script>
