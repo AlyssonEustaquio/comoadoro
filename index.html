@@ -96,20 +96,6 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, #ffffff 0%, #fef3c7 100%);
-            border-left: 4px solid #f59e0b;
-        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -128,75 +114,11 @@
                 </h1>
                 <p class="text-gray-600 text-lg mt-1">Sistema Inteligente de Custos e Receitas</p>
             </div>
-            <div class="flex gap-3">
-                <div class="bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
-                    <span class="text-sm text-amber-800 font-semibold" id="data-atual"></span>
-                </div>
-            </div>
         </header>
-
-        <!-- Dashboard -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 fade-in">
-            <div class="stat-card card p-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-2xl">
-                        📦
-                    </div>
-                    <div>
-                        <p class="text-gray-600 text-sm">Ingredientes</p>
-                        <p class="text-2xl font-bold" id="dash-ingredientes">0</p>
-                        <p class="text-xs text-gray-500">cadastrados</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card card p-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center text-2xl">
-                        📝
-                    </div>
-                    <div>
-                        <p class="text-gray-600 text-sm">Receitas</p>
-                        <p class="text-2xl font-bold" id="dash-receitas">0</p>
-                        <p class="text-xs text-gray-500">cadastradas</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card card p-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center text-2xl">
-                        💰
-                    </div>
-                    <div>
-                        <p class="text-gray-600 text-sm">Custo Médio</p>
-                        <p class="text-2xl font-bold" id="dash-custo-medio">R$ 0,00</p>
-                        <p class="text-xs text-gray-500">por receita</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card card p-6">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center text-2xl">
-                        📈
-                    </div>
-                    <div>
-                        <p class="text-gray-600 text-sm">Preço Sugerido</p>
-                        <p class="text-2xl font-bold" id="dash-preco-medio">R$ 0,00</p>
-                        <p class="text-xs text-gray-500">margem aplicada</p>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <!-- Navegação -->
         <div class="flex flex-wrap gap-3 mb-8">
-            <button onclick="mostrarAba('dashboard')" id="aba-dashboard" class="tab-active px-6 py-3 rounded-xl font-semibold shadow-lg transition-all flex items-center gap-2">
-                <i class="fas fa-chart-pie"></i>
-                Dashboard
-            </button>
-            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2">
+            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="tab-active px-6 py-3 rounded-xl font-semibold shadow-lg transition-all flex items-center gap-2">
                 <i class="fas fa-box"></i>
                 Ingredientes
             </button>
@@ -204,34 +126,10 @@
                 <i class="fas fa-book-open"></i>
                 Receitas
             </button>
-            <button onclick="mostrarAba('relatorios')" id="aba-relatorios" class="px-6 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2">
-                <i class="fas fa-chart-bar"></i>
-                Relatórios
-            </button>
         </div>
 
-        <!-- Dashboard Section -->
-        <section id="tela-dashboard" class="tela fade-in">
-            <!-- Receita Mais Lucrativa -->
-            <div class="card p-8 mb-6" id="receita-destaque">
-                <h2 class="text-2xl font-bold mb-6 flex items-center gap-3">
-                    <span>🏆</span> Receita Mais Lucrativa
-                </h2>
-                <div id="destaque-content" class="text-center py-8 text-gray-500">
-                    <i class="fas fa-star text-6xl mb-4 text-amber-300"></i>
-                    <p class="text-xl">Cadastre receitas para ver o destaque</p>
-                </div>
-            </div>
-
-            <!-- Últimas Receitas -->
-            <div class="card p-8">
-                <h2 class="text-2xl font-bold mb-6">📋 Últimas Receitas Cadastradas</h2>
-                <div id="ultimas-receitas" class="space-y-4"></div>
-            </div>
-        </section>
-
         <!-- Produtos Section -->
-        <section id="tela-produtos" class="tela hidden">
+        <section id="tela-produtos" class="tela fade-in">
             <div class="grid md:grid-cols-2 gap-8">
                 <div class="card p-8">
                     <h2 class="text-2xl font-bold mb-6" id="titulo-produto">
@@ -376,48 +274,6 @@
                 </div>
             </div>
         </section>
-
-        <!-- Relatórios Section -->
-        <section id="tela-relatorios" class="tela hidden">
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="card p-8">
-                    <h2 class="text-2xl font-bold mb-6">📊 Resumo Financeiro</h2>
-                    <div class="space-y-4" id="resumo-financeiro">
-                        <div class="flex justify-between py-3 border-b">
-                            <span class="text-gray-600">Total em Ingredientes</span>
-                            <span class="font-bold" id="rel-total-ingredientes">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between py-3 border-b">
-                            <span class="text-gray-600">Custo Total das Receitas</span>
-                            <span class="font-bold" id="rel-custo-receitas">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between py-3 border-b">
-                            <span class="text-gray-600">Receita Potencial</span>
-                            <span class="font-bold text-green-600" id="rel-receita-potencial">R$ 0,00</span>
-                        </div>
-                        <div class="flex justify-between py-3 border-b">
-                            <span class="text-gray-600">Lucro Potencial</span>
-                            <span class="font-bold text-purple-600" id="rel-lucro-potencial">R$ 0,00</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card p-8">
-                    <h2 class="text-2xl font-bold mb-6">🏅 Top 5 Receitas Mais Lucrativas</h2>
-                    <div id="top-lucrativas" class="space-y-3"></div>
-                </div>
-
-                <div class="card p-8">
-                    <h2 class="text-2xl font-bold mb-6">📦 Ingredientes Mais Utilizados</h2>
-                    <div id="ingredientes-populares" class="space-y-3"></div>
-                </div>
-
-                <div class="card p-8">
-                    <h2 class="text-2xl font-bold mb-6">📈 Distribuição de Custos</h2>
-                    <div id="distribuicao-custos" class="space-y-3"></div>
-                </div>
-            </div>
-        </section>
     </div>
 
     <script>
@@ -425,13 +281,6 @@
         let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
         let receitas = JSON.parse(localStorage.getItem('receitas')) || [];
         let ingredientesTemp = [];
-        let produtoEditando = null;
-        let receitaEditando = null;
-
-        // Atualizar data
-        document.getElementById('data-atual').textContent = new Date().toLocaleDateString('pt-BR', {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
 
         // Toast
         function mostrarToast(mensagem, tipo = 'success') {
@@ -443,18 +292,19 @@
                 warning: 'bg-yellow-500',
                 info: 'bg-blue-500'
             };
+            const icones = {
+                success: 'check-circle',
+                error: 'times-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            };
             toast.className = `toast ${cores[tipo]} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3`;
             toast.innerHTML = `
-                <i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'error' ? 'times-circle' : 'info-circle'}"></i>
+                <i class="fas fa-${icones[tipo]}"></i>
                 ${mensagem}
             `;
             container.appendChild(toast);
             setTimeout(() => toast.remove(), 3000);
-        }
-
-        // Confirmação
-        function confirmarExclusao(mensagem) {
-            return confirm(mensagem);
         }
 
         // Salvar dados
@@ -502,11 +352,6 @@
             return qtdBase * precoPorUnidadeBase(produto);
         }
 
-        // Calcular custo total da receita
-        function calcularCustoReceita(receita) {
-            return receita.ingredientes.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
-        }
-
         // Atualizar preço sugerido
         function atualizarPrecoSugerido() {
             const custoTotal = ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
@@ -539,138 +384,6 @@
             }
             
             if (aba === 'receitas') carregarSelectProdutos();
-            if (aba === 'dashboard') atualizarDashboard();
-            if (aba === 'relatorios') atualizarRelatorios();
-        }
-
-        // Dashboard
-        function atualizarDashboard() {
-            document.getElementById('dash-ingredientes').textContent = produtos.length;
-            document.getElementById('dash-receitas').textContent = receitas.length;
-            
-            const custoMedio = receitas.length > 0 
-                ? receitas.reduce((s, r) => s + (r.custoTotal || 0), 0) / receitas.length 
-                : 0;
-            document.getElementById('dash-custo-medio').textContent = moeda(custoMedio);
-            
-            const margemMedia = 150; // margem padrão
-            const precoMedio = custoMedio * (1 + margemMedia / 100);
-            document.getElementById('dash-preco-medio').textContent = moeda(precoMedio);
-            
-            // Receita mais lucrativa
-            const receitaDestaque = receitas.reduce((melhor, atual) => {
-                const lucroAtual = (atual.custoTotal || 0) * 1.5;
-                const lucroMelhor = (melhor?.custoTotal || 0) * 1.5;
-                return lucroAtual > lucroMelhor ? atual : melhor;
-            }, null);
-            
-            const destaqueDiv = document.getElementById('destaque-content');
-            if (receitaDestaque) {
-                const precoSugerido = (receitaDestaque.custoTotal || 0) * 2.5;
-                const lucroEstimado = precoSugerido - (receitaDestaque.custoTotal || 0);
-                
-                destaqueDiv.innerHTML = `
-                    <div class="text-center">
-                        <div class="text-4xl mb-3">🏆</div>
-                        <h3 class="text-2xl font-bold mb-2">${receitaDestaque.nome}</h3>
-                        <p class="text-gray-600 mb-4">${receitaDestaque.rendimento} porções • ${receitaDestaque.ingredientes.length} ingredientes</p>
-                        <div class="grid grid-cols-3 gap-4 max-w-md mx-auto">
-                            <div class="bg-red-50 rounded-xl p-3">
-                                <p class="text-sm text-gray-600">CUSTO</p>
-                                <p class="font-bold text-red-600">${moeda(receitaDestaque.custoTotal || 0)}</p>
-                            </div>
-                            <div class="bg-green-50 rounded-xl p-3">
-                                <p class="text-sm text-gray-600">VENDA</p>
-                                <p class="font-bold text-green-600">${moeda(precoSugerido)}</p>
-                            </div>
-                            <div class="bg-purple-50 rounded-xl p-3">
-                                <p class="text-sm text-gray-600">LUCRO</p>
-                                <p class="font-bold text-purple-600">${moeda(lucroEstimado)}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } else {
-                destaqueDiv.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-star text-6xl mb-4 text-amber-300"></i>
-                        <p class="text-xl">Cadastre receitas para ver o destaque</p>
-                    </div>
-                `;
-            }
-            
-            // Últimas receitas
-            const ultimasDiv = document.getElementById('ultimas-receitas');
-            if (receitas.length === 0) {
-                ultimasDiv.innerHTML = '<p class="text-center text-gray-500 py-8">Nenhuma receita cadastrada</p>';
-            } else {
-                ultimasDiv.innerHTML = receitas.slice(-3).reverse().map(r => `
-                    <div class="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
-                        <div>
-                            <p class="font-semibold">${r.nome}</p>
-                            <p class="text-sm text-gray-600">${r.ingredientes.length} ingredientes • ${r.rendimento} porções</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-bold text-red-600">${moeda(r.custoTotal || 0)}</p>
-                            <p class="text-sm text-gray-600">${moeda((r.custoTotal || 0) / r.rendimento)}/porção</p>
-                        </div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        // Relatórios
-        function atualizarRelatorios() {
-            // Resumo financeiro
-            const totalIngredientes = produtos.reduce((s, p) => s + p.preco, 0);
-            const custoReceitas = receitas.reduce((s, r) => s + (r.custoTotal || 0), 0);
-            const receitaPotencial = receitas.reduce((s, r) => s + (r.custoTotal || 0) * 2.5, 0);
-            
-            document.getElementById('rel-total-ingredientes').textContent = moeda(totalIngredientes);
-            document.getElementById('rel-custo-receitas').textContent = moeda(custoReceitas);
-            document.getElementById('rel-receita-potencial').textContent = moeda(receitaPotencial);
-            document.getElementById('rel-lucro-potencial').textContent = moeda(receitaPotencial - custoReceitas);
-            
-            // Top lucrativas
-            const topLucrativas = [...receitas]
-                .sort((a, b) => ((b.custoTotal || 0) * 1.5) - ((a.custoTotal || 0) * 1.5))
-                .slice(0, 5);
-            
-            document.getElementById('top-lucrativas').innerHTML = topLucrativas.length === 0 
-                ? '<p class="text-gray-500 text-center py-4">Nenhuma receita cadastrada</p>'
-                : topLucrativas.map((r, i) => `
-                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                        <div class="flex items-center gap-3">
-                            <span class="text-2xl font-bold text-amber-500">#${i + 1}</span>
-                            <span class="font-semibold">${r.nome}</span>
-                        </div>
-                        <span class="font-bold text-green-600">${moeda((r.custoTotal || 0) * 1.5)}</span>
-                    </div>
-                `).join('');
-            
-            // Ingredientes populares
-            const contagemIngredientes = {};
-            receitas.forEach(r => {
-                r.ingredientes.forEach(ing => {
-                    contagemIngredientes[ing.idProduto] = (contagemIngredientes[ing.idProduto] || 0) + 1;
-                });
-            });
-            
-            const ingredientesPopulares = Object.entries(contagemIngredientes)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 5);
-            
-            document.getElementById('ingredientes-populares').innerHTML = ingredientesPopulares.length === 0
-                ? '<p class="text-gray-500 text-center py-4">Nenhum ingrediente utilizado</p>'
-                : ingredientesPopulares.map(([id, count]) => {
-                    const produto = produtos.find(p => p.id === id);
-                    return produto ? `
-                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-xl">
-                            <span class="font-semibold">${produto.nome}</span>
-                            <span class="text-gray-600">${count} receita(s)</span>
-                        </div>
-                    ` : '';
-                }).join('');
         }
 
         // Produtos
@@ -704,16 +417,15 @@
             if (id) {
                 const index = produtos.findIndex(p => p.id === id);
                 if (index !== -1) produtos[index] = dados;
-                mostrarToast('Ingrediente atualizado!', 'success');
+                mostrarToast('Ingrediente atualizado com sucesso!', 'success');
             } else {
                 produtos.push(dados);
-                mostrarToast('Ingrediente cadastrado!', 'success');
+                mostrarToast('Ingrediente cadastrado com sucesso!', 'success');
             }
             
             salvarDados();
             listarProdutos();
             cancelarEdicaoProduto();
-            atualizarDashboard();
         }
 
         function editarProduto(id) {
@@ -731,19 +443,18 @@
         }
 
         function excluirProduto(id) {
-            if (!confirmarExclusao('Tem certeza que deseja excluir este ingrediente?')) return;
+            if (!confirm('Tem certeza que deseja excluir este ingrediente?')) return;
             
             const emUso = receitas.some(r => r.ingredientes.some(ing => ing.idProduto === id));
             if (emUso) {
-                mostrarToast('Ingrediente em uso em receitas!', 'warning');
+                mostrarToast('Este ingrediente está em uso em receitas! Remova-o das receitas primeiro.', 'warning');
                 return;
             }
             
             produtos = produtos.filter(p => p.id !== id);
             salvarDados();
             listarProdutos();
-            mostrarToast('Ingrediente excluído!', 'success');
-            atualizarDashboard();
+            mostrarToast('Ingrediente excluído com sucesso!', 'success');
         }
 
         function cancelarEdicaoProduto() {
@@ -804,6 +515,7 @@
 
         function listarProdutos() {
             renderizarProdutos();
+            document.getElementById('busca-produto').value = '';
         }
 
         // Receitas
@@ -839,7 +551,7 @@
             );
             
             if (duplicata) {
-                mostrarToast('Ingrediente já adicionado!', 'warning');
+                mostrarToast('Este ingrediente já foi adicionado!', 'warning');
                 return;
             }
             
@@ -915,7 +627,7 @@
                 return;
             }
             
-            const custoTotal = calcularCustoReceita({ ingredientes: ingredientesTemp });
+            const custoTotal = ingredientesTemp.reduce((total, ing) => total + custoIngredienteReceita(ing), 0);
             const id = document.getElementById('id-receita').value;
             const dados = {
                 id: id || gerarId(),
@@ -923,26 +635,21 @@
                 rendimento,
                 ingredientes: [...ingredientesTemp],
                 custoTotal,
-                custoUnitario: custoTotal / rendimento,
-                dataCriacao: new Date().toISOString()
+                custoUnitario: custoTotal / rendimento
             };
             
             if (id) {
                 const index = receitas.findIndex(r => r.id === id);
-                if (index !== -1) {
-                    dados.dataCriacao = receitas[index].dataCriacao;
-                    receitas[index] = dados;
-                }
-                mostrarToast('Receita atualizada!', 'success');
+                if (index !== -1) receitas[index] = dados;
+                mostrarToast('Receita atualizada com sucesso!', 'success');
             } else {
                 receitas.push(dados);
-                mostrarToast('Receita cadastrada!', 'success');
+                mostrarToast('Receita cadastrada com sucesso!', 'success');
             }
             
             salvarDados();
             listarReceitas();
             cancelarEdicaoReceita();
-            atualizarDashboard();
         }
 
         function editarReceita(id) {
@@ -966,13 +673,12 @@
         }
 
         function excluirReceita(id) {
-            if (!confirmarExclusao('Tem certeza que deseja excluir esta receita?')) return;
+            if (!confirm('Tem certeza que deseja excluir esta receita?')) return;
             
             receitas = receitas.filter(r => r.id !== id);
             salvarDados();
             listarReceitas();
-            mostrarToast('Receita excluída!', 'success');
-            atualizarDashboard();
+            mostrarToast('Receita excluída com sucesso!', 'success');
         }
 
         function cancelarEdicaoReceita() {
@@ -1078,15 +784,9 @@
         }
 
         // Inicialização
-        function inicializar() {
-            listarProdutos();
-            listarReceitas();
-            atualizarDashboard();
-            mostrarAba('dashboard');
-        }
-
-        // Iniciar
-        inicializar();
+        listarProdutos();
+        listarReceitas();
+        mostrarAba('produtos');
     </script>
 </body>
 </html>
