@@ -20,10 +20,9 @@
             <button onclick="mostrarAba('receitas')" id="aba-receitas" class="bg-white px-5 py-3 rounded-lg font-semibold shadow hover:bg-gray-50 transition">📝 Receitas</button>
         </div>
 
-        <!-- ABA PRODUTOS -->
+        <!-- ============== ABA PRODUTOS ============== -->
         <section id="tela-produtos" class="tela">
             <div class="grid md:grid-cols-2 gap-6">
-                <!-- Formulário produto -->
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-lg font-bold mb-4 text-slate-800" id="titulo-produto">➕ Adicionar Produto</h2>
                     <form id="form-produto" onsubmit="salvarProduto(event)">
@@ -63,7 +62,6 @@
                     </form>
                 </div>
 
-                <!-- Lista produtos -->
                 <div class="bg-white p-6 rounded-xl shadow">
                     <h2 class="text-lg font-bold mb-4 text-slate-800">📋 Produtos Cadastrados: <span id="total-produtos" class="text-emerald-600">0</span></h2>
                     <div id="lista-produtos" class="space-y-2 max-h-[500px] overflow-y-auto pr-1"></div>
@@ -71,7 +69,7 @@
             </div>
         </section>
 
-        <!-- ABA RECEITAS (mantida igual, só ajustei a função de conversão) -->
+        <!-- ============== ABA RECEITAS ============== -->
         <section id="tela-receitas" class="tela hidden">
             <div class="grid lg:grid-cols-3 gap-6">
                 <div class="bg-white p-6 rounded-xl shadow lg:col-span-1">
@@ -137,7 +135,6 @@
     </div>
 
     <script>
-        // ========== DADOS E ARMAZENAMENTO ==========
         let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
         let receitas = JSON.parse(localStorage.getItem('receitas')) || [];
         let ingredientesTemp = [];
@@ -150,7 +147,6 @@
         function gerarId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
         function moeda(v) { return `R$ ${v.toFixed(2).replace('.', ',')}`; }
 
-        // ==================== CONVERSÃO DE UNIDADES ====================
         function paraBase(qtd, unidade) {
             switch(unidade) {
                 case 'kg': return qtd;
@@ -199,15 +195,213 @@
             listarReceitas();
         }
 
-        // (O restante das funções permanece igual ao seu código original)
-        // Apenas copie as funções: mostrarAba, salvarProduto, editarProduto, etc.
+        function mostrarAba(aba) {
+            document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('[id^="aba-"]').forEach(b => {
+                b.classList.remove('aba-ativa');
+                b.classList.add('bg-white','shadow');
+            });
+            document.getElementById(`tela-${aba}`).classList.remove('hidden');
+            const botao = document.getElementById(`aba-${aba}`);
+            botao.classList.add('aba-ativa');
+            botao.classList.remove('bg-white','shadow');
+            if (aba === 'receitas') carregarSelectProdutos();
+        }
 
-        // INICIALIZAR
+        function salvarProduto(e) {
+            e.preventDefault();
+            const id = document.getElementById('id-produto').value;
+            const dados = {
+                id: id || gerarId(),
+                nome: document.getElementById('nome-produto').value.trim(),
+                preco: parseFloat(document.getElementById('preco-produto').value),
+                quantidade: parseFloat(document.getElementById('qtd-produto').value),
+                unidade: document.getElementById('unidade-produto').value
+            };
+            if (id) {
+                const i = produtos.findIndex(p => p.id === id);
+                produtos[i] = dados;
+            } else {
+                produtos.push(dados);
+            }
+            atualizarTodosOsCustos();
+            listarProdutos();
+            cancelarEdicaoProduto();
+        }
+
+        function editarProduto(id) {
+            const p = produtos.find(x => x.id === id);
+            document.getElementById('id-produto').value = p.id;
+            document.getElementById('nome-produto').value = p.nome;
+            document.getElementById('preco-produto').value = p.preco;
+            document.getElementById('qtd-produto').value = p.quantidade;
+            document.getElementById('unidade-produto').value = p.unidade;
+            document.getElementById('titulo-produto').textContent = '✏️ Editar Produto';
+        }
+
+        function excluirProduto(id) {
+            if (!confirm('Excluir este produto? Também será removido das receitas!')) return;
+            produtos = produtos.filter(p => p.id !== id);
+            receitas.forEach(r => {
+                r.ingredientes = r.ingredientes.filter(i => i.idProduto !== id);
+            });
+            atualizarTodosOsCustos();
+            listarProdutos();
+        }
+
+        function cancelarEdicaoProduto() {
+            document.getElementById('form-produto').reset();
+            document.getElementById('id-produto').value = '';
+            document.getElementById('titulo-produto').textContent = '➕ Adicionar Produto';
+        }
+
+        function listarProdutos() {
+            const div = document.getElementById('lista-produtos');
+            document.getElementById('total-produtos').textContent = produtos.length;
+            if (produtos.length === 0) {
+                div.innerHTML = '<p class="text-slate-400 text-sm">Nenhum produto cadastrado</p>';
+                return;
+            }
+            div.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome)).map(p => {
+                const unidadeBase = getUnidadeBase(p.unidade);
+                const preco = moeda(precoBase(p));
+                return `
+                    <div class="flex justify-between items-center border rounded-lg p-3 hover:bg-slate-50">
+                        <div>
+                            <div class="font-semibold">${p.nome}</div>
+                            <div class="text-xs text-slate-500">${moeda(p.preco)} / ${p.quantidade} ${p.unidade} → ${preco} por ${unidadeBase}</div>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="editarProduto('${p.id}')" class="text-blue-600 px-2 py-1 text-sm">Editar</button>
+                            <button onclick="excluirProduto('${p.id}')" class="text-red-500 px-2 py-1 text-sm">Excluir</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function carregarSelectProdutos() {
+            const sel = document.getElementById('ing-produto');
+            sel.innerHTML = produtos.sort((a,b)=>a.nome.localeCompare(b.nome))
+                .map(p => `<option value="${p.id}">${p.nome} - ${moeda(p.preco)}/${p.quantidade}${p.unidade}</option>`).join('');
+        }
+
+        function adicionarIngrediente() {
+            const idProd = document.getElementById('ing-produto').value;
+            const qtd = parseFloat(document.getElementById('ing-qtd').value);
+            const uni = document.getElementById('ing-unidade').value;
+            if (!idProd || !qtd || qtd <= 0) return alert('Preencha quantidade válida');
+            const prod = produtos.find(p => p.id === idProd);
+            ingredientesTemp.push({ idProduto: idProd, nome: prod.nome, quantidade: qtd, unidade: uni });
+            document.getElementById('ing-qtd').value = '';
+            listarIngredientesTemp();
+        }
+
+        function removerIngrediente(i) {
+            ingredientesTemp.splice(i,1);
+            listarIngredientesTemp();
+        }
+
+        function listarIngredientesTemp() {
+            const ul = document.getElementById('lista-ingredientes');
+            ul.innerHTML = ingredientesTemp.map((ing, i) => `
+                <li class="flex justify-between bg-slate-50 px-2 py-1 rounded">
+                    <span>${ing.quantidade} ${ing.unidade} - ${ing.nome} <b class="text-emerald-600">${moeda(custoIngrediente(ing))}</b></span>
+                    <button onclick="removerIngrediente(${i})" class="text-red-500 text-xs">✕</button>
+                </li>
+            `).join('');
+            const total = ingredientesTemp.reduce((s,i)=>s+custoIngrediente(i),0);
+            const rend = parseFloat(document.getElementById('rendimento').value) || 1;
+            document.getElementById('custo-total').textContent = moeda(total);
+            document.getElementById('custo-unitario').textContent = moeda(total/rend);
+        }
+
+        function salvarReceita(e) {
+            e.preventDefault();
+            if (ingredientesTemp.length === 0) return alert('Adicione pelo menos 1 ingrediente');
+            const id = document.getElementById('id-receita').value;
+            const dados = {
+                id: id || gerarId(),
+                nome: document.getElementById('nome-receita').value.trim(),
+                rendimento: parseFloat(document.getElementById('rendimento').value),
+                ingredientes: [...ingredientesTemp],
+                custoTotal: 0,
+                custoUnitario: 0
+            };
+            if (id) {
+                const i = receitas.findIndex(r => r.id === id);
+                receitas[i] = dados;
+            } else {
+                receitas.push(dados);
+            }
+            atualizarTodosOsCustos();
+            cancelarEdicaoReceita();
+        }
+
+        function editarReceita(id) {
+            const r = receitas.find(x => x.id === id);
+            document.getElementById('id-receita').value = r.id;
+            document.getElementById('nome-receita').value = r.nome;
+            document.getElementById('rendimento').value = r.rendimento;
+            ingredientesTemp = JSON.parse(JSON.stringify(r.ingredientes));
+            document.getElementById('titulo-receita').textContent = '✏️ Editar Receita';
+            carregarSelectProdutos();
+            listarIngredientesTemp();
+            mostrarAba('receitas');
+        }
+
+        function excluirReceita(id) {
+            if (!confirm('Excluir esta receita?')) return;
+            receitas = receitas.filter(r => r.id !== id);
+            salvarDados();
+            listarReceitas();
+        }
+
+        function cancelarEdicaoReceita() {
+            document.getElementById('form-receita').reset();
+            document.getElementById('id-receita').value = '';
+            ingredientesTemp = [];
+            listarIngredientesTemp();
+            document.getElementById('titulo-receita').textContent = '➕ Nova Receita';
+        }
+
+        function listarReceitas() {
+            const div = document.getElementById('lista-receitas');
+            document.getElementById('total-receitas').textContent = receitas.length;
+            if (receitas.length === 0) {
+                div.innerHTML = '<p class="text-slate-400 text-sm">Nenhuma receita cadastrada</p>';
+                return;
+            }
+            div.innerHTML = receitas.sort((a,b)=>a.nome.localeCompare(b.nome)).map(r => `
+                <div class="border rounded-lg p-4 bg-gradient-to-br from-slate-50 to-white hover:shadow-md transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-bold text-slate-800">${r.nome}</h3>
+                        <div class="flex gap-1">
+                            <button onclick="editarReceita('${r.id}')" class="text-blue-600 text-xs px-2 py-1">Editar</button>
+                            <button onclick="excluirReceita('${r.id}')" class="text-red-500 text-xs px-2 py-1">Excluir</button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-500 mb-2">Rendimento: ${r.rendimento} unidades</div>
+                    <div class="bg-emerald-50 border border-emerald-200 rounded p-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-700">Custo total:</span>
+                            <span class="font-bold text-emerald-700">${moeda(r.custoTotal)}</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-700">Custo/unidade:</span>
+                            <span class="font-bold text-emerald-600">${moeda(r.custoUnitario)}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Inicialização
         listarProdutos();
         listarReceitas();
 
         const style = document.createElement('style');
-        style.textContent = `.aba-ativa { @apply bg-emerald-600 text-white shadow-lg; }`;
+        style.textContent = `.aba-ativa { background-color: rgb(16 185 129); color: white; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); }`;
         document.head.appendChild(style);
     </script>
 </body>
