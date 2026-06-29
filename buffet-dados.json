@@ -1,8 +1,16 @@
 {
   "inst_mqzskcsyawjxqx": {
     "_instancia_id": "inst_mqzskcsyawjxqx",
-    "_timestamp": "2026-06-29T22:37:50.278Z",
-    "produtos": [],
+    "_timestamp": "2026-06-29T22:39:10.066Z",
+    "produtos": [
+      {
+        "id": "mqzsv5rl4l1mrwc4k",
+        "nome": "sadasd",
+        "preco": 223,
+        "quantidade": 12,
+        "unidade": "kg"
+      }
+    ],
     "receitas": [],
     "produtosVenda": [],
     "movimentacoesEstoque": []
