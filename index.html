@@ -171,6 +171,40 @@
         </div>
     </div>
 
+    <!-- Modal Configuração GitHub -->
+    <div id="modal-config-github" class="fixed inset-0 z-40 hidden items-center justify-center">
+        <div class="modal-overlay absolute inset-0" onclick="fecharModalConfig()"></div>
+        <div class="card p-8 relative z-10 w-full max-w-lg mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold"><i class="fab fa-github"></i> Configurar GitHub</h3>
+                <button onclick="fecharModalConfig()" class="text-gray-500 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Token de Acesso Pessoal</label>
+                    <input type="password" id="gh-token" class="input-field w-full rounded-xl px-4 py-3" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                    <p class="text-xs text-gray-500 mt-1">Crie em Settings → Developer settings → Personal access tokens (repo)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Repositório (ex: usuario/repo)</label>
+                    <input type="text" id="gh-repo" class="input-field w-full rounded-xl px-4 py-3" placeholder="seuuser/backup-buffet">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Caminho do arquivo (opcional)</label>
+                    <input type="text" id="gh-path" class="input-field w-full rounded-xl px-4 py-3" placeholder="buffet-dados.json" value="buffet-dados.json">
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="testarConexaoGitHub()" class="btn bg-blue-500 hover:bg-blue-600 text-white flex-1 py-3 rounded-xl font-semibold">
+                        <i class="fas fa-plug mr-2"></i> Testar Conexão
+                    </button>
+                    <button onclick="salvarConfigFechar()" class="btn btn-primary flex-1 py-3 rounded-xl font-semibold">
+                        <i class="fas fa-save mr-2"></i> Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container mx-auto px-4 py-6 max-w-7xl">
         <!-- Navegação -->
         <div class="flex flex-wrap gap-3 mb-8">
@@ -266,68 +300,39 @@
             </div>
         </section>
 
-        <!-- Backup (GitHub) -->
+        <!-- Backup (GitHub) - NOVA VERSÃO SIMPLIFICADA -->
         <section id="tela-backup" class="tela hidden">
-            <div class="max-w-4xl mx-auto">
-                <div class="card p-8 mb-8">
-                    <h2 class="text-2xl font-bold mb-6"><i class="fab fa-github"></i> Backup no GitHub</h2>
-                    <p class="text-gray-600 mb-6">Configure um repositório privado para salvar automaticamente todos os seus dados. Cada instância usa um ID único, permitindo várias máquinas no mesmo arquivo.</p>
+            <div class="max-w-2xl mx-auto">
+                <div class="card p-8 text-center">
+                    <i class="fab fa-github text-5xl text-gray-700 mb-4"></i>
+                    <h2 class="text-2xl font-bold mb-4">Backup no GitHub</h2>
+                    <p class="text-gray-600 mb-6">Seus dados são salvos automaticamente a cada <strong>1 hora</strong>.<br>Use os botões para controle manual.</p>
                     
-                    <div class="grid md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">Token de Acesso Pessoal (GitHub)</label>
-                            <input type="password" id="gh-token" class="input-field w-full rounded-xl px-4 py-3" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-                            <p class="text-xs text-gray-500 mt-1">Crie em Settings → Developer settings → Personal access tokens (repo)</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">Repositório (ex: usuario/repo)</label>
-                            <input type="text" id="gh-repo" class="input-field w-full rounded-xl px-4 py-3" placeholder="seuuser/backup-buffet">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold mb-2">Caminho do arquivo (opcional)</label>
-                            <input type="text" id="gh-path" class="input-field w-full rounded-xl px-4 py-3" placeholder="buffet/dados.json" value="buffet-dados.json">
-                        </div>
-                        <div class="flex items-end">
-                            <button onclick="testarConexaoGitHub()" class="btn bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold w-full">
-                                <i class="fas fa-plug mr-2"></i> Testar Conexão
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center justify-between bg-gray-50 rounded-xl p-4">
-                        <div>
-                            <span class="font-semibold">Status: </span>
-                            <span id="gh-status" class="text-gray-500">Não configurado</span>
-                        </div>
-                        <button onclick="forcarBackupAgora()" class="btn bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-xl font-semibold">
-                            <i class="fas fa-cloud-upload-alt mr-2"></i> Forçar Backup Agora
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <button onclick="forcarBackupAgora()" class="btn bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2">
+                            <i class="fas fa-cloud-upload-alt text-xl"></i> Salvar Agora
+                        </button>
+                        <button onclick="restaurarDoGitHub()" class="btn bg-purple-500 hover:bg-purple-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2">
+                            <i class="fas fa-sync-alt text-xl"></i> Sincronizar Dados
+                        </button>
+                        <button onclick="abrirModalConfig()" class="btn bg-gray-500 hover:bg-gray-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2">
+                            <i class="fas fa-cog text-xl"></i> Configurar
                         </button>
                     </div>
-                    
-                    <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                        <h3 class="font-bold text-amber-800 mb-2"><i class="fas fa-info-circle mr-2"></i> Como funciona</h3>
-                        <ul class="text-sm text-amber-700 space-y-1">
-                            <li>• O backup é enviado automaticamente após cada alteração (salvar/editar/excluir).</li>
-                            <li>• O ID único desta instância é: <code id="instancia-id" class="bg-amber-100 px-2 py-1 rounded text-amber-900 font-mono"></code></li>
-                            <li>• O arquivo no GitHub armazena os dados de todas as instâncias que usam o mesmo repositório/caminho.</li>
-                            <li>• Para restaurar, basta clicar em "Forçar Backup Agora" em uma nova instância com o mesmo ID.</li>
-                        </ul>
-                    </div>
-                </div>
 
-                <!-- Restauração -->
-                <div class="card p-8">
-                    <h2 class="text-2xl font-bold mb-6"><i class="fas fa-download"></i> Restaurar Dados</h2>
-                    <p class="text-gray-600 mb-4">Carregue os dados salvos no GitHub para esta instância.</p>
-                    <div class="flex gap-4">
-                        <button onclick="restaurarDoGitHub()" class="btn bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-xl font-semibold">
-                            <i class="fas fa-sync-alt mr-2"></i> Restaurar do GitHub
-                        </button>
-                        <button onclick="exportarJSON()" class="btn bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-xl font-semibold">
-                            <i class="fas fa-file-download mr-2"></i> Exportar JSON
-                        </button>
+                    <div class="bg-gray-50 rounded-xl p-4 text-left text-sm">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-semibold">Status:</span>
+                            <span id="backup-status" class="text-gray-500">Não configurado</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-semibold">Último backup:</span>
+                            <span id="backup-ultimo" class="text-gray-500">-</span>
+                        </div>
+                        <div class="mt-2 text-gray-500">
+                            <i class="fas fa-fingerprint mr-1"></i> ID: <code id="backup-instancia-id" class="bg-white px-2 py-0.5 rounded text-xs"></code>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-500 mt-3">A restauração substitui todos os dados locais. Faça backup antes!</p>
                 </div>
             </div>
         </section>
@@ -347,29 +352,12 @@
             INSTANCIA_ID = 'inst_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
             localStorage.setItem('instancia_id', INSTANCIA_ID);
         }
-        document.getElementById('instancia-id').textContent = INSTANCIA_ID;
 
         // Configurações do GitHub
         let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
-        document.getElementById('gh-token').value = ghConfig.token || '';
-        document.getElementById('gh-repo').value = ghConfig.repo || '';
-        document.getElementById('gh-path').value = ghConfig.path || 'buffet-dados.json';
 
-        // Salvar config do GitHub quando alterado
-        document.getElementById('gh-token').addEventListener('change', salvarGhConfig);
-        document.getElementById('gh-repo').addEventListener('change', salvarGhConfig);
-        document.getElementById('gh-path').addEventListener('change', salvarGhConfig);
-
-        function salvarGhConfig() {
-            ghConfig.token = document.getElementById('gh-token').value.trim();
-            ghConfig.repo = document.getElementById('gh-repo').value.trim();
-            ghConfig.path = document.getElementById('gh-path').value.trim() || 'buffet-dados.json';
-            localStorage.setItem('gh_config', JSON.stringify(ghConfig));
-        }
-
-        function configGhOk() {
-            return ghConfig.token && ghConfig.repo;
-        }
+        // Auto-backup interval
+        let autoBackupInterval = null;
 
         // ==================== TOAST ====================
         function mostrarToast(mensagem, tipo = 'success') {
@@ -389,8 +377,12 @@
             localStorage.setItem('receitas', JSON.stringify(receitas));
             localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
             localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
-            // Backup no GitHub (assíncrono, não bloqueia)
+            // Tenta backup imediato (assíncrono)
             backupParaGitHub().catch(e => console.warn('Falha no backup automático:', e));
+        }
+
+        function configGhOk() {
+            return ghConfig.token && ghConfig.repo;
         }
 
         // ==================== BACKUP NO GITHUB ====================
@@ -407,7 +399,6 @@
             };
 
             try {
-                // 1. Obter arquivo atual do GitHub para pegar o sha
                 let sha = null;
                 let conteudoAtual = {};
                 const getUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
@@ -421,26 +412,16 @@
                     if (resp.ok) {
                         const fileData = await resp.json();
                         sha = fileData.sha;
-                        // Decodificar conteúdo (base64)
                         const conteudoStr = atob(fileData.content.replace(/\n/g, ''));
                         conteudoAtual = JSON.parse(conteudoStr);
-                    } else if (resp.status === 404) {
-                        // Arquivo não existe ainda
-                    } else {
+                    } else if (resp.status !== 404) {
                         throw new Error(`Erro ao acessar arquivo: ${resp.status}`);
                     }
                 } catch (e) {
-                    if (e.message.includes('404')) {
-                        // Arquivo não existe
-                    } else {
-                        throw e;
-                    }
+                    if (!e.message.includes('404')) throw e;
                 }
 
-                // 2. Atualizar o objeto com os dados desta instância
                 conteudoAtual[INSTANCIA_ID] = dadosBackup;
-
-                // 3. Fazer PUT com o novo conteúdo
                 const novoConteudo = JSON.stringify(conteudoAtual, null, 2);
                 const body = {
                     message: `Backup automático - ${new Date().toLocaleString('pt-BR')}`,
@@ -452,15 +433,14 @@
                 const putUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
                 const putResp = await fetch(putUrl, {
                     method: 'PUT',
-                    headers: {
-                        ...headers,
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { ...headers, 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
                 });
 
                 if (putResp.ok) {
-                    atualizarStatusGh('Conectado - Último backup: ' + new Date().toLocaleTimeString('pt-BR'), 'green');
+                    const agora = new Date().toLocaleString('pt-BR');
+                    localStorage.setItem('ultimo_backup', agora);
+                    atualizarStatusBackup();
                     if (force) mostrarToast('Backup enviado com sucesso!', 'success');
                 } else {
                     const errData = await putResp.json();
@@ -468,44 +448,38 @@
                 }
             } catch (e) {
                 console.error('Erro no backup GitHub:', e);
-                atualizarStatusGh('Erro: ' + e.message, 'red');
                 if (force) mostrarToast('Falha no backup: ' + e.message, 'error');
             }
         }
 
-        function atualizarStatusGh(texto, cor) {
-            const el = document.getElementById('gh-status');
-            el.textContent = texto;
-            el.className = `font-semibold text-${cor}-600`;
+        function atualizarStatusBackup() {
+            const statusEl = document.getElementById('backup-status');
+            const ultimoEl = document.getElementById('backup-ultimo');
+            if (!statusEl) return; // ainda não renderizado
+
+            if (!configGhOk()) {
+                statusEl.textContent = 'Não configurado';
+                statusEl.className = 'text-gray-500';
+            } else {
+                statusEl.textContent = 'Ativo (automático 1h)';
+                statusEl.className = 'text-green-600 font-semibold';
+            }
+            const ultimo = localStorage.getItem('ultimo_backup');
+            ultimoEl.textContent = ultimo || 'Nunca';
         }
 
-        async function testarConexaoGitHub() {
-            salvarGhConfig();
-            if (!configGhOk()) {
-                mostrarToast('Configure token e repositório primeiro', 'warning');
-                return;
-            }
-            try {
-                const resp = await fetch(`https://api.github.com/repos/${ghConfig.repo}`, {
-                    headers: { 'Authorization': `token ${ghConfig.token}` }
-                });
-                if (resp.ok) {
-                    mostrarToast('Conexão com GitHub bem-sucedida!', 'success');
-                    atualizarStatusGh('Conectado', 'green');
-                    // Fazer backup inicial
-                    await backupParaGitHub(true);
-                } else {
-                    const err = await resp.json();
-                    mostrarToast('Erro: ' + (err.message || 'Verifique token/repo'), 'error');
+        function iniciarAutoBackup() {
+            if (autoBackupInterval) clearInterval(autoBackupInterval);
+            autoBackupInterval = setInterval(() => {
+                if (configGhOk()) {
+                    backupParaGitHub().catch(e => console.warn('Auto-backup falhou:', e));
                 }
-            } catch (e) {
-                mostrarToast('Erro de conexão: ' + e.message, 'error');
-            }
+            }, 3600000); // 1 hora
         }
 
         async function forcarBackupAgora() {
             if (!configGhOk()) {
-                mostrarToast('Configure o GitHub primeiro', 'warning');
+                mostrarToast('Configure o GitHub primeiro (clique em Configurar)', 'warning');
                 return;
             }
             await backupParaGitHub(true);
@@ -533,7 +507,7 @@
                     receitas = meusDados.receitas || [];
                     produtosVenda = meusDados.produtosVenda || [];
                     movimentacoesEstoque = meusDados.movimentacoesEstoque || [];
-                    salvarDados(); // salva local e tenta backup
+                    salvarDados();
                     inicializar();
                     mostrarToast('Dados restaurados com sucesso!', 'success');
                 } else {
@@ -544,23 +518,54 @@
             }
         }
 
-        function exportarJSON() {
-            const dados = {
-                _instancia_id: INSTANCIA_ID,
-                _timestamp: new Date().toISOString(),
-                produtos,
-                receitas,
-                produtosVenda,
-                movimentacoesEstoque
-            };
-            const blob = new Blob([JSON.stringify(dados, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `backup-buffet-${new Date().toISOString().slice(0,10)}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-            mostrarToast('Arquivo JSON exportado!', 'success');
+        // ==================== MODAL CONFIGURAÇÃO ====================
+        function abrirModalConfig() {
+            document.getElementById('gh-token').value = ghConfig.token || '';
+            document.getElementById('gh-repo').value = ghConfig.repo || '';
+            document.getElementById('gh-path').value = ghConfig.path || 'buffet-dados.json';
+            document.getElementById('modal-config-github').classList.remove('hidden');
+            document.getElementById('modal-config-github').classList.add('flex');
+        }
+        function fecharModalConfig() {
+            document.getElementById('modal-config-github').classList.add('hidden');
+            document.getElementById('modal-config-github').classList.remove('flex');
+        }
+        function salvarConfigFechar() {
+            ghConfig.token = document.getElementById('gh-token').value.trim();
+            ghConfig.repo = document.getElementById('gh-repo').value.trim();
+            ghConfig.path = document.getElementById('gh-path').value.trim() || 'buffet-dados.json';
+            localStorage.setItem('gh_config', JSON.stringify(ghConfig));
+            atualizarStatusBackup();
+            fecharModalConfig();
+            mostrarToast('Configuração salva!', 'success');
+            // Força um backup inicial se config ok
+            if (configGhOk()) backupParaGitHub(true);
+        }
+        async function testarConexaoGitHub() {
+            // Salva temporariamente para testar
+            ghConfig.token = document.getElementById('gh-token').value.trim();
+            ghConfig.repo = document.getElementById('gh-repo').value.trim();
+            ghConfig.path = document.getElementById('gh-path').value.trim() || 'buffet-dados.json';
+            localStorage.setItem('gh_config', JSON.stringify(ghConfig));
+            if (!configGhOk()) {
+                mostrarToast('Preencha token e repositório', 'warning');
+                return;
+            }
+            try {
+                const resp = await fetch(`https://api.github.com/repos/${ghConfig.repo}`, {
+                    headers: { 'Authorization': `token ${ghConfig.token}` }
+                });
+                if (resp.ok) {
+                    mostrarToast('Conexão bem-sucedida!', 'success');
+                    document.getElementById('backup-status').textContent = 'Ativo (automático 1h)';
+                    document.getElementById('backup-status').className = 'text-green-600 font-semibold';
+                } else {
+                    const err = await resp.json();
+                    mostrarToast('Erro: ' + (err.message || 'Verifique token/repo'), 'error');
+                }
+            } catch (e) {
+                mostrarToast('Erro de conexão: ' + e.message, 'error');
+            }
         }
 
         // ==================== UTILITÁRIOS ====================
@@ -593,13 +598,8 @@
             if(aba === 'receitas') carregarSelectProdutos();
             if(aba === 'produtos-venda') { listarProdutosVenda(); atualizarDashboard(); }
             if(aba === 'backup') {
-                document.getElementById('instancia-id').textContent = INSTANCIA_ID;
-                // Verificar status
-                if (configGhOk()) {
-                    atualizarStatusGh('Configurado', 'blue');
-                } else {
-                    atualizarStatusGh('Não configurado', 'gray');
-                }
+                document.getElementById('backup-instancia-id').textContent = INSTANCIA_ID;
+                atualizarStatusBackup();
             }
         }
 
@@ -1033,6 +1033,7 @@
         document.getElementById('modal-entrada').addEventListener('click', function(e) { if(e.target===this) fecharModalEntrada(); });
         document.getElementById('modal-saida').addEventListener('click', function(e) { if(e.target===this) fecharModalSaida(); });
         document.getElementById('modal-historico').addEventListener('click', function(e) { if(e.target===this) fecharModalHistorico(); });
+        document.getElementById('modal-config-github').addEventListener('click', function(e) { if(e.target===this) fecharModalConfig(); });
 
         function inicializar() {
             sincronizarTodosProdutosVenda();
@@ -1048,11 +1049,7 @@
             listarProdutosVenda();
             atualizarDashboard();
             mostrarAba('produtos');
-            
-            // Verificar status do GitHub
-            if (configGhOk()) {
-                atualizarStatusGh('Configurado (automático ativo)', 'blue');
-            }
+            iniciarAutoBackup();
         }
 
         inicializar();
