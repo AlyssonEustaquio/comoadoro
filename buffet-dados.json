@@ -1,7 +1,7 @@
 {
   "inst_mqzskcsyawjxqx": {
     "_instancia_id": "inst_mqzskcsyawjxqx",
-    "_timestamp": "2026-06-29T22:49:38.386Z",
+    "_timestamp": "2026-06-30T07:39:45.596Z",
     "produtos": [
       {
         "id": "mqzsv5rl4l1mrwc4k",
@@ -105,7 +105,7 @@
       },
       {
         "id": "mqv2y3rzwcs6h3y9e6b",
-        "nome": "queijo parmesÃ£o",
+        "nome": "queijo parmesÃÂ£o",
         "preco": 95,
         "quantidade": 1,
         "unidade": "kg"
@@ -150,7 +150,7 @@
           },
           {
             "idProduto": "mqv2y3rzwcs6h3y9e6b",
-            "nome": "queijo parmesÃ£o",
+            "nome": "queijo parmesÃÂ£o",
             "quantidade": 50,
             "unidade": "g"
           },
@@ -199,7 +199,7 @@
         "id": "mqvtve5vj8jmzh75w",
         "idProdutoVenda": "mqvttdbl94914i9jx",
         "data": "2026-06-27T03:56:15.859Z",
-        "tipo": "SaÃ­da",
+        "tipo": "SaÃÂ­da",
         "quantidade": 3,
         "estoqueAntes": 10,
         "estoqueDepois": 7,
@@ -221,7 +221,7 @@
         "id": "mqvtxvah9aahhewji",
         "idProdutoVenda": "mqvttdbl94914i9jx",
         "data": "2026-06-27T03:58:11.369Z",
-        "tipo": "SaÃ­da",
+        "tipo": "SaÃÂ­da",
         "quantidade": 30,
         "estoqueAntes": 47,
         "estoqueDepois": 17,
@@ -232,7 +232,7 @@
         "id": "mqvty7sy5gjq6qoaa",
         "idProdutoVenda": "mqvttdbl94914i9jx",
         "data": "2026-06-27T03:58:27.586Z",
-        "tipo": "SaÃ­da",
+        "tipo": "SaÃÂ­da",
         "quantidade": 3,
         "estoqueAntes": 17,
         "estoqueDepois": 14,
@@ -243,7 +243,7 @@
         "id": "mqvtybvtly5dci7th",
         "idProdutoVenda": "mqvttdbl94914i9jx",
         "data": "2026-06-27T03:58:32.873Z",
-        "tipo": "SaÃ­da",
+        "tipo": "SaÃÂ­da",
         "quantidade": 10,
         "estoqueAntes": 14,
         "estoqueDepois": 4,
@@ -254,7 +254,7 @@
         "id": "mqvtykohsl0ymsa8l",
         "idProdutoVenda": "mqvttdbl94914i9jx",
         "data": "2026-06-27T03:58:44.273Z",
-        "tipo": "SaÃ­da",
+        "tipo": "SaÃÂ­da",
         "quantidade": 4,
         "estoqueAntes": 4,
         "estoqueDepois": 0,
