@@ -1,1 +1,1 @@
-https://alyssoneustaquio.github.io/comoadoro/
+https://alyssoneustaquio.github.io/comoadoro
