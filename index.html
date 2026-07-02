@@ -300,13 +300,13 @@
             </div>
         </section>
 
-        <!-- Backup (GitHub) - NOVA VERSÃO SIMPLIFICADA -->
+        <!-- Backup (GitHub) - MULTIDISPOSITIVO -->
         <section id="tela-backup" class="tela hidden">
             <div class="max-w-2xl mx-auto">
                 <div class="card p-8 text-center">
                     <i class="fab fa-github text-5xl text-gray-700 mb-4"></i>
-                    <h2 class="text-2xl font-bold mb-4">Backup no GitHub</h2>
-                    <p class="text-gray-600 mb-6">Seus dados são salvos automaticamente a cada <strong>1 hora</strong>.<br>Use os botões para controle manual.</p>
+                    <h2 class="text-2xl font-bold mb-4">Backup Compartilhado</h2>
+                    <p class="text-gray-600 mb-6">Todos os dispositivos configurados com o mesmo repositório compartilham os mesmos dados.<br>Backup automático a cada <strong>1 hora</strong>.</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                         <button onclick="forcarBackupAgora()" class="btn bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2">
@@ -329,10 +329,10 @@
                             <span class="font-semibold">Último backup:</span>
                             <span id="backup-ultimo" class="text-gray-500">-</span>
                         </div>
-                        <div class="mt-2 text-gray-500">
-                            <i class="fas fa-fingerprint mr-1"></i> ID: <code id="backup-instancia-id" class="bg-white px-2 py-0.5 rounded text-xs"></code>
-                        </div>
                     </div>
+                    <p class="text-xs text-gray-400 mt-4">
+                        ⚠️ O último dispositivo a salvar sobrescreve os dados. Evite edições simultâneas.
+                    </p>
                 </div>
             </div>
         </section>
@@ -345,13 +345,6 @@
         let produtosVenda = JSON.parse(localStorage.getItem('produtosVenda')) || [];
         let movimentacoesEstoque = JSON.parse(localStorage.getItem('movimentacoesEstoque')) || [];
         let ingredientesTemp = [];
-
-        // ID único da instância
-        let INSTANCIA_ID = localStorage.getItem('instancia_id');
-        if (!INSTANCIA_ID) {
-            INSTANCIA_ID = 'inst_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
-            localStorage.setItem('instancia_id', INSTANCIA_ID);
-        }
 
         // Configurações do GitHub
         let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
@@ -385,12 +378,12 @@
             return ghConfig.token && ghConfig.repo;
         }
 
-        // ==================== BACKUP NO GITHUB ====================
+        // ==================== BACKUP NO GITHUB (COMPARTILHADO) ====================
         async function backupParaGitHub(force = false) {
             if (!configGhOk()) return;
             
+            // Dados diretos, sem chave de instância
             const dadosBackup = {
-                _instancia_id: INSTANCIA_ID,
                 _timestamp: new Date().toISOString(),
                 produtos,
                 receitas,
@@ -399,8 +392,8 @@
             };
 
             try {
+                // Obter SHA do arquivo atual (se existir)
                 let sha = null;
-                let conteudoAtual = {};
                 const getUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
                 const headers = {
                     'Authorization': `token ${ghConfig.token}`,
@@ -412,8 +405,6 @@
                     if (resp.ok) {
                         const fileData = await resp.json();
                         sha = fileData.sha;
-                        const conteudoStr = atob(fileData.content.replace(/\n/g, ''));
-                        conteudoAtual = JSON.parse(conteudoStr);
                     } else if (resp.status !== 404) {
                         throw new Error(`Erro ao acessar arquivo: ${resp.status}`);
                     }
@@ -421,10 +412,10 @@
                     if (!e.message.includes('404')) throw e;
                 }
 
-                conteudoAtual[INSTANCIA_ID] = dadosBackup;
-                const novoConteudo = JSON.stringify(conteudoAtual, null, 2);
+                // Conteúdo único que substitui tudo
+                const novoConteudo = JSON.stringify(dadosBackup, null, 2);
                 const body = {
-                    message: `Backup automático - ${new Date().toLocaleString('pt-BR')}`,
+                    message: `Backup - ${new Date().toLocaleString('pt-BR')}`,
                     content: btoa(unescape(encodeURIComponent(novoConteudo))),
                     branch: 'main'
                 };
@@ -455,7 +446,7 @@
         function atualizarStatusBackup() {
             const statusEl = document.getElementById('backup-status');
             const ultimoEl = document.getElementById('backup-ultimo');
-            if (!statusEl) return; // ainda não renderizado
+            if (!statusEl) return;
 
             if (!configGhOk()) {
                 statusEl.textContent = 'Não configurado';
@@ -490,7 +481,7 @@
                 mostrarToast('Configure o GitHub primeiro', 'warning');
                 return;
             }
-            if (!confirm('Isso substituirá TODOS os dados locais. Continuar?')) return;
+            if (!confirm('Isso substituirá TODOS os dados locais pelos do GitHub. Continuar?')) return;
             try {
                 const getUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
                 const resp = await fetch(getUrl, {
@@ -499,19 +490,19 @@
                 if (!resp.ok) throw new Error('Arquivo não encontrado ou acesso negado');
                 const fileData = await resp.json();
                 const conteudoStr = atob(fileData.content.replace(/\n/g, ''));
-                const todosDados = JSON.parse(conteudoStr);
+                const dados = JSON.parse(conteudoStr);
                 
-                if (todosDados[INSTANCIA_ID]) {
-                    const meusDados = todosDados[INSTANCIA_ID];
-                    produtos = meusDados.produtos || [];
-                    receitas = meusDados.receitas || [];
-                    produtosVenda = meusDados.produtosVenda || [];
-                    movimentacoesEstoque = meusDados.movimentacoesEstoque || [];
+                // Validação básica: espera-se um objeto com as chaves principais
+                if (dados.produtos && dados.receitas && dados.produtosVenda && dados.movimentacoesEstoque) {
+                    produtos = dados.produtos;
+                    receitas = dados.receitas;
+                    produtosVenda = dados.produtosVenda;
+                    movimentacoesEstoque = dados.movimentacoesEstoque;
                     salvarDados();
                     inicializar();
                     mostrarToast('Dados restaurados com sucesso!', 'success');
                 } else {
-                    mostrarToast('Nenhum dado encontrado para esta instância', 'warning');
+                    throw new Error('Formato de dados inválido no arquivo.');
                 }
             } catch (e) {
                 mostrarToast('Erro ao restaurar: ' + e.message, 'error');
@@ -538,11 +529,9 @@
             atualizarStatusBackup();
             fecharModalConfig();
             mostrarToast('Configuração salva!', 'success');
-            // Força um backup inicial se config ok
             if (configGhOk()) backupParaGitHub(true);
         }
         async function testarConexaoGitHub() {
-            // Salva temporariamente para testar
             ghConfig.token = document.getElementById('gh-token').value.trim();
             ghConfig.repo = document.getElementById('gh-repo').value.trim();
             ghConfig.path = document.getElementById('gh-path').value.trim() || 'buffet-dados.json';
@@ -598,7 +587,6 @@
             if(aba === 'receitas') carregarSelectProdutos();
             if(aba === 'produtos-venda') { listarProdutosVenda(); atualizarDashboard(); }
             if(aba === 'backup') {
-                document.getElementById('backup-instancia-id').textContent = INSTANCIA_ID;
                 atualizarStatusBackup();
             }
         }
