@@ -300,13 +300,14 @@
             </div>
         </section>
 
-        <!-- Backup (GitHub) - MULTIDISPOSITIVO -->
+        <!-- Backup (GitHub) - MULTIDISPOSITIVO COM MERGE -->
         <section id="tela-backup" class="tela hidden">
             <div class="max-w-2xl mx-auto">
                 <div class="card p-8 text-center">
                     <i class="fab fa-github text-5xl text-gray-700 mb-4"></i>
                     <h2 class="text-2xl font-bold mb-4">Backup Compartilhado</h2>
-                    <p class="text-gray-600 mb-6">Todos os dispositivos configurados com o mesmo repositório compartilham os mesmos dados.<br>Backup automático a cada <strong>1 hora</strong>.</p>
+                    <p class="text-gray-600 mb-2">Todos os dispositivos com a mesma configuração compartilham os dados.</p>
+                    <p class="text-gray-500 mb-6 text-sm">Ao salvar, o sistema mescla os dados locais com o que já está no GitHub, sem perder registros.</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                         <button onclick="forcarBackupAgora()" class="btn bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2">
@@ -331,7 +332,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-gray-400 mt-4">
-                        ⚠️ O último dispositivo a salvar sobrescreve os dados. Evite edições simultâneas.
+                        ⚠️ Evite edições simultâneas. O último a salvar prevalece em conflitos de mesmo ID.
                     </p>
                 </div>
             </div>
@@ -370,7 +371,7 @@
             localStorage.setItem('receitas', JSON.stringify(receitas));
             localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
             localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
-            // Tenta backup imediato (assíncrono)
+            // Tenta backup imediato (assíncrono, com merge)
             backupParaGitHub().catch(e => console.warn('Falha no backup automático:', e));
         }
 
@@ -378,33 +379,60 @@
             return ghConfig.token && ghConfig.repo;
         }
 
-        // ==================== BACKUP NO GITHUB (COMPARTILHADO) ====================
+        // ==================== FUNÇÕES DE CODIFICAÇÃO CORRIGIDAS ====================
+        function stringToBase64(str) {
+            // Usa TextEncoder para suportar UTF-8 corretamente
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(str);
+            let binary = '';
+            bytes.forEach(b => binary += String.fromCharCode(b));
+            return btoa(binary);
+        }
+
+        function base64ToString(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const decoder = new TextDecoder();
+            return decoder.decode(bytes);
+        }
+
+        // ==================== MERGE DE ARRAYS POR ID ====================
+        function mergeArrays(localArray, remoteArray) {
+            // Cria um mapa a partir do array local
+            const map = new Map(localArray.map(item => [item.id, item]));
+            // Adiciona itens remotos que não existem localmente
+            remoteArray.forEach(item => {
+                if (!map.has(item.id)) {
+                    map.set(item.id, item);
+                } // Se existir nos dois, mantém o local (última edição)
+            });
+            return Array.from(map.values());
+        }
+
+        // ==================== BACKUP NO GITHUB (COM MERGE) ====================
         async function backupParaGitHub(force = false) {
             if (!configGhOk()) return;
             
-            // Dados diretos, sem chave de instância
-            const dadosBackup = {
-                _timestamp: new Date().toISOString(),
-                produtos,
-                receitas,
-                produtosVenda,
-                movimentacoesEstoque
-            };
-
             try {
-                // Obter SHA do arquivo atual (se existir)
-                let sha = null;
+                // 1. Baixa o arquivo atual do GitHub
+                let remoteData = null;
                 const getUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
                 const headers = {
                     'Authorization': `token ${ghConfig.token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 };
 
+                let sha = null;
                 try {
                     const resp = await fetch(getUrl, { headers });
                     if (resp.ok) {
                         const fileData = await resp.json();
                         sha = fileData.sha;
+                        const conteudoStr = base64ToString(fileData.content);
+                        remoteData = JSON.parse(conteudoStr);
                     } else if (resp.status !== 404) {
                         throw new Error(`Erro ao acessar arquivo: ${resp.status}`);
                     }
@@ -412,11 +440,47 @@
                     if (!e.message.includes('404')) throw e;
                 }
 
-                // Conteúdo único que substitui tudo
-                const novoConteudo = JSON.stringify(dadosBackup, null, 2);
+                // 2. Prepara os dados locais
+                const localData = {
+                    produtos,
+                    receitas,
+                    produtosVenda,
+                    movimentacoesEstoque
+                };
+
+                // 3. Se existir dados remotos, faz o merge
+                let finalData;
+                if (remoteData) {
+                    finalData = {
+                        _timestamp: new Date().toISOString(),
+                        produtos: mergeArrays(localData.produtos, remoteData.produtos || []),
+                        receitas: mergeArrays(localData.receitas, remoteData.receitas || []),
+                        produtosVenda: mergeArrays(localData.produtosVenda, remoteData.produtosVenda || []),
+                        movimentacoesEstoque: mergeArrays(localData.movimentacoesEstoque, remoteData.movimentacoesEstoque || [])
+                    };
+                } else {
+                    finalData = {
+                        _timestamp: new Date().toISOString(),
+                        ...localData
+                    };
+                }
+
+                // 4. Atualiza o array local com o resultado do merge (para manter a consistência)
+                produtos = finalData.produtos;
+                receitas = finalData.receitas;
+                produtosVenda = finalData.produtosVenda;
+                movimentacoesEstoque = finalData.movimentacoesEstoque;
+                // Salva no localStorage imediatamente para refletir o estado mesclado
+                localStorage.setItem('produtos', JSON.stringify(produtos));
+                localStorage.setItem('receitas', JSON.stringify(receitas));
+                localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
+                localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
+
+                // 5. Codifica e envia
+                const novoConteudo = JSON.stringify(finalData, null, 2);
                 const body = {
                     message: `Backup - ${new Date().toLocaleString('pt-BR')}`,
-                    content: btoa(unescape(encodeURIComponent(novoConteudo))),
+                    content: stringToBase64(novoConteudo),
                     branch: 'main'
                 };
                 if (sha) body.sha = sha;
@@ -432,7 +496,14 @@
                     const agora = new Date().toLocaleString('pt-BR');
                     localStorage.setItem('ultimo_backup', agora);
                     atualizarStatusBackup();
-                    if (force) mostrarToast('Backup enviado com sucesso!', 'success');
+                    if (force) {
+                        mostrarToast('Backup mesclado enviado com sucesso!', 'success');
+                        // Recarrega a interface para mostrar os dados mesclados
+                        listarProdutos();
+                        listarReceitas();
+                        listarProdutosVenda();
+                        atualizarDashboard();
+                    }
                 } else {
                     const errData = await putResp.json();
                     throw new Error(errData.message || 'Erro ao salvar');
@@ -489,10 +560,9 @@
                 });
                 if (!resp.ok) throw new Error('Arquivo não encontrado ou acesso negado');
                 const fileData = await resp.json();
-                const conteudoStr = atob(fileData.content.replace(/\n/g, ''));
+                const conteudoStr = base64ToString(fileData.content);
                 const dados = JSON.parse(conteudoStr);
                 
-                // Validação básica: espera-se um objeto com as chaves principais
                 if (dados.produtos && dados.receitas && dados.produtosVenda && dados.movimentacoesEstoque) {
                     produtos = dados.produtos;
                     receitas = dados.receitas;
