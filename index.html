@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buffet ComoAdoro</title>
+    <title>Buffet ComoAdoro - Sistema de Custos</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
@@ -300,14 +300,14 @@
             </div>
         </section>
 
-        <!-- Backup (GitHub) - MULTIDISPOSITIVO COM MERGE -->
+        <!-- Backup (GitHub) -->
         <section id="tela-backup" class="tela hidden">
             <div class="max-w-2xl mx-auto">
                 <div class="card p-8 text-center">
                     <i class="fab fa-github text-5xl text-gray-700 mb-4"></i>
                     <h2 class="text-2xl font-bold mb-4">Backup Compartilhado</h2>
-                    <p class="text-gray-600 mb-2">Todos os dispositivos com a mesma configuração compartilham os dados.</p>
-                    <p class="text-gray-500 mb-6 text-sm">Ao salvar, o sistema mescla os dados locais com o que já está no GitHub, sem perder registros.</p>
+                    <p class="text-gray-600 mb-2">Sincronização automática ao abrir a página + backup a cada ação.</p>
+                    <p class="text-gray-500 mb-6 text-sm">O último dispositivo a salvar define o arquivo completo.</p>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                         <button onclick="forcarBackupAgora()" class="btn bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2">
@@ -332,7 +332,7 @@
                         </div>
                     </div>
                     <p class="text-xs text-gray-400 mt-4">
-                        ⚠️ Evite edições simultâneas. O último a salvar prevalece em conflitos de mesmo ID.
+                        ⚠️ Evite edições simultâneas. Ao abrir a página, os dados mais recentes do GitHub são carregados automaticamente.
                     </p>
                 </div>
             </div>
@@ -350,7 +350,7 @@
         // Configurações do GitHub
         let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
 
-        // Auto-backup interval
+        // Auto-backup interval (1 hora)
         let autoBackupInterval = null;
 
         // ==================== TOAST ====================
@@ -371,7 +371,7 @@
             localStorage.setItem('receitas', JSON.stringify(receitas));
             localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
             localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
-            // Tenta backup imediato (assíncrono, com merge)
+            // Dispara backup imediato (assíncrono)
             backupParaGitHub().catch(e => console.warn('Falha no backup automático:', e));
         }
 
@@ -379,9 +379,8 @@
             return ghConfig.token && ghConfig.repo;
         }
 
-        // ==================== FUNÇÕES DE CODIFICAÇÃO CORRIGIDAS ====================
+        // ==================== CODIFICAÇÃO UTF-8 CORRETA ====================
         function stringToBase64(str) {
-            // Usa TextEncoder para suportar UTF-8 corretamente
             const encoder = new TextEncoder();
             const bytes = encoder.encode(str);
             let binary = '';
@@ -395,44 +394,34 @@
             for (let i = 0; i < binary.length; i++) {
                 bytes[i] = binary.charCodeAt(i);
             }
-            const decoder = new TextDecoder();
-            return decoder.decode(bytes);
+            return new TextDecoder().decode(bytes);
         }
 
-        // ==================== MERGE DE ARRAYS POR ID ====================
-        function mergeArrays(localArray, remoteArray) {
-            // Cria um mapa a partir do array local
-            const map = new Map(localArray.map(item => [item.id, item]));
-            // Adiciona itens remotos que não existem localmente
-            remoteArray.forEach(item => {
-                if (!map.has(item.id)) {
-                    map.set(item.id, item);
-                } // Se existir nos dois, mantém o local (última edição)
-            });
-            return Array.from(map.values());
-        }
-
-        // ==================== BACKUP NO GITHUB (COM MERGE) ====================
+        // ==================== BACKUP NO GITHUB (SOBRESCREVE) ====================
         async function backupParaGitHub(force = false) {
             if (!configGhOk()) return;
             
+            const dadosBackup = {
+                _timestamp: new Date().toISOString(),
+                produtos,
+                receitas,
+                produtosVenda,
+                movimentacoesEstoque
+            };
+
             try {
-                // 1. Baixa o arquivo atual do GitHub
-                let remoteData = null;
+                let sha = null;
                 const getUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
                 const headers = {
                     'Authorization': `token ${ghConfig.token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 };
 
-                let sha = null;
                 try {
                     const resp = await fetch(getUrl, { headers });
                     if (resp.ok) {
                         const fileData = await resp.json();
                         sha = fileData.sha;
-                        const conteudoStr = base64ToString(fileData.content);
-                        remoteData = JSON.parse(conteudoStr);
                     } else if (resp.status !== 404) {
                         throw new Error(`Erro ao acessar arquivo: ${resp.status}`);
                     }
@@ -440,44 +429,7 @@
                     if (!e.message.includes('404')) throw e;
                 }
 
-                // 2. Prepara os dados locais
-                const localData = {
-                    produtos,
-                    receitas,
-                    produtosVenda,
-                    movimentacoesEstoque
-                };
-
-                // 3. Se existir dados remotos, faz o merge
-                let finalData;
-                if (remoteData) {
-                    finalData = {
-                        _timestamp: new Date().toISOString(),
-                        produtos: mergeArrays(localData.produtos, remoteData.produtos || []),
-                        receitas: mergeArrays(localData.receitas, remoteData.receitas || []),
-                        produtosVenda: mergeArrays(localData.produtosVenda, remoteData.produtosVenda || []),
-                        movimentacoesEstoque: mergeArrays(localData.movimentacoesEstoque, remoteData.movimentacoesEstoque || [])
-                    };
-                } else {
-                    finalData = {
-                        _timestamp: new Date().toISOString(),
-                        ...localData
-                    };
-                }
-
-                // 4. Atualiza o array local com o resultado do merge (para manter a consistência)
-                produtos = finalData.produtos;
-                receitas = finalData.receitas;
-                produtosVenda = finalData.produtosVenda;
-                movimentacoesEstoque = finalData.movimentacoesEstoque;
-                // Salva no localStorage imediatamente para refletir o estado mesclado
-                localStorage.setItem('produtos', JSON.stringify(produtos));
-                localStorage.setItem('receitas', JSON.stringify(receitas));
-                localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
-                localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
-
-                // 5. Codifica e envia
-                const novoConteudo = JSON.stringify(finalData, null, 2);
+                const novoConteudo = JSON.stringify(dadosBackup, null, 2);
                 const body = {
                     message: `Backup - ${new Date().toLocaleString('pt-BR')}`,
                     content: stringToBase64(novoConteudo),
@@ -496,14 +448,7 @@
                     const agora = new Date().toLocaleString('pt-BR');
                     localStorage.setItem('ultimo_backup', agora);
                     atualizarStatusBackup();
-                    if (force) {
-                        mostrarToast('Backup mesclado enviado com sucesso!', 'success');
-                        // Recarrega a interface para mostrar os dados mesclados
-                        listarProdutos();
-                        listarReceitas();
-                        listarProdutosVenda();
-                        atualizarDashboard();
-                    }
+                    if (force) mostrarToast('Backup enviado com sucesso!', 'success');
                 } else {
                     const errData = await putResp.json();
                     throw new Error(errData.message || 'Erro ao salvar');
@@ -523,7 +468,7 @@
                 statusEl.textContent = 'Não configurado';
                 statusEl.className = 'text-gray-500';
             } else {
-                statusEl.textContent = 'Ativo (automático 1h)';
+                statusEl.textContent = 'Ativo (salva a cada ação)';
                 statusEl.className = 'text-green-600 font-semibold';
             }
             const ultimo = localStorage.getItem('ultimo_backup');
@@ -536,7 +481,7 @@
                 if (configGhOk()) {
                     backupParaGitHub().catch(e => console.warn('Auto-backup falhou:', e));
                 }
-            }, 3600000); // 1 hora
+            }, 3600000);
         }
 
         async function forcarBackupAgora() {
@@ -579,6 +524,38 @@
             }
         }
 
+        // ==================== SINCRONIZAÇÃO AUTOMÁTICA AO INICIAR ====================
+        async function sincronizarAoIniciar() {
+            if (!configGhOk()) return false;
+            try {
+                const getUrl = `https://api.github.com/repos/${ghConfig.repo}/contents/${ghConfig.path}`;
+                const resp = await fetch(getUrl, {
+                    headers: { 'Authorization': `token ${ghConfig.token}` }
+                });
+                if (!resp.ok) return false;
+                const fileData = await resp.json();
+                const conteudoStr = base64ToString(fileData.content);
+                const dados = JSON.parse(conteudoStr);
+                if (dados.produtos && dados.receitas && dados.produtosVenda && dados.movimentacoesEstoque) {
+                    // Substitui os arrays locais
+                    produtos = dados.produtos;
+                    receitas = dados.receitas;
+                    produtosVenda = dados.produtosVenda;
+                    movimentacoesEstoque = dados.movimentacoesEstoque;
+                    // Salva no localStorage
+                    localStorage.setItem('produtos', JSON.stringify(produtos));
+                    localStorage.setItem('receitas', JSON.stringify(receitas));
+                    localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
+                    localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
+                    return true;
+                }
+                return false;
+            } catch (e) {
+                console.warn('Sincronização inicial falhou, usando dados locais:', e);
+                return false;
+            }
+        }
+
         // ==================== MODAL CONFIGURAÇÃO ====================
         function abrirModalConfig() {
             document.getElementById('gh-token').value = ghConfig.token || '';
@@ -616,7 +593,7 @@
                 });
                 if (resp.ok) {
                     mostrarToast('Conexão bem-sucedida!', 'success');
-                    document.getElementById('backup-status').textContent = 'Ativo (automático 1h)';
+                    document.getElementById('backup-status').textContent = 'Ativo (salva a cada ação)';
                     document.getElementById('backup-status').className = 'text-green-600 font-semibold';
                 } else {
                     const err = await resp.json();
@@ -656,9 +633,7 @@
             if(botao) { botao.classList.add('tab-active'); botao.classList.remove('bg-white'); }
             if(aba === 'receitas') carregarSelectProdutos();
             if(aba === 'produtos-venda') { listarProdutosVenda(); atualizarDashboard(); }
-            if(aba === 'backup') {
-                atualizarStatusBackup();
-            }
+            if(aba === 'backup') atualizarStatusBackup();
         }
 
         // ==================== INGREDIENTES ====================
@@ -1093,7 +1068,13 @@
         document.getElementById('modal-historico').addEventListener('click', function(e) { if(e.target===this) fecharModalHistorico(); });
         document.getElementById('modal-config-github').addEventListener('click', function(e) { if(e.target===this) fecharModalConfig(); });
 
-        function inicializar() {
+        async function inicializar() {
+            // Tenta sincronizar do GitHub ao iniciar
+            const sincronizou = await sincronizarAoIniciar();
+            if (sincronizou) {
+                console.log('Dados sincronizados do GitHub com sucesso.');
+            }
+            // Continua com a inicialização normal
             sincronizarTodosProdutosVenda();
             receitas.forEach(r => {
                 if(!produtosVenda.find(pv => pv.idReceita===r.id)) {
