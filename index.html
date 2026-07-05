@@ -152,6 +152,115 @@
         let movimentacoesEstoque = JSON.parse(localStorage.getItem('movimentacoesEstoque')) || [];
         let ingredientesTemp = [];
         let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
+
+        function mostrarToast(mensagem, tipo = 'success') {
+            const container = document.getElementById('toast-container');
+            const cores = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500' };
+            const toast = document.createElement('div');
+            toast.className = `toast ${cores[tipo]} text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3`;
+            toast.innerHTML = `<i class="fas fa-${tipo==='success'?'check':'exclamation'}-circle"></i> ${mensagem}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function salvarDados() {
+            localStorage.setItem('produtos', JSON.stringify(produtos));
+            localStorage.setItem('receitas', JSON.stringify(receitas));
+            localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
+            localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
+        }
+
+        function gerarId() { return Date.now().toString(36) + Math.random().toString(36).substr(2, 9); }
+        function moeda(valor) { return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor); }
+        function paraBase(qtd, unidade) { const conv = { kg:1, g:0.001, l:1, ml:0.001, un:1 }; return qtd * (conv[unidade]||1); }
+        function precoPorUnidadeBase(produto) { const qtdBase = paraBase(produto.quantidade, produto.unidade); return qtdBase > 0 ? produto.preco / qtdBase : 0; }
+        function custoIngredienteReceita(ing) { const p = produtos.find(p => p.id === ing.idProduto); if(!p) return 0; return paraBase(ing.quantidade, ing.unidade) * precoPorUnidadeBase(p); }
+
+        function atualizarPrecoSugerido() {
+            const custoTotal = ingredientesTemp.reduce((t, ing) => t + custoIngredienteReceita(ing), 0);
+            const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
+            const margem = parseFloat(document.getElementById('margem-lucro').value) || 0;
+            const custoUnitario = custoTotal / rendimento;
+            const precoSugerido = custoUnitario * (1 + margem / 100);
+            document.getElementById('custo-total').textContent = moeda(custoTotal);
+            document.getElementById('custo-unitario').textContent = moeda(custoUnitario);
+            document.getElementById('preco-sugerido-input').value = precoSugerido.toFixed(2);
+            document.getElementById('lucro-estimado').textContent = moeda((precoSugerido * rendimento) - custoTotal);
+        }
+
+        function atualizarMargemPorPreco() {
+            const custoTotal = ingredientesTemp.reduce((t, ing) => t + custoIngredienteReceita(ing), 0);
+            const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
+            const custoUnitario = custoTotal / rendimento;
+            const preco = parseFloat(document.getElementById('preco-sugerido-input').value) || 0;
+            let margem = 0;
+            if (custoUnitario > 0) margem = ((preco / custoUnitario) - 1) * 100;
+            document.getElementById('margem-lucro').value = margem.toFixed(2);
+            document.getElementById('lucro-estimado').textContent = moeda(preco * rendimento - custoTotal);
+        }
+
+        function mostrarAba(aba) {
+            document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
+            document.querySelectorAll('[id^="aba-"]').forEach(b => { b.classList.remove('tab-active'); b.classList.add('bg-white'); });
+            const tela = document.getElementById(`tela-${aba}`);
+            const botao = document.getElementById(`aba-${aba}`);
+            if(tela) tela.classList.remove('hidden');
+            if(botao) { botao.classList.add('tab-active'); botao.classList.remove('bg-white'); }
+            if(aba === 'receitas') carregarSelectProdutos();
+            if(aba === 'produtos-venda') { listarProdutosVenda(); atual                    <input type="text" id="busca-receita" oninput="filtrarReceitas()" placeholder="🔍 Buscar receita..." class="input-field w-full sm:flex-1 rounded-xl px-4 py-3">
+                    <select id="ordem-receita" onchange="filtrarReceitas()" class="input-field w-full sm:w-auto rounded-xl px-4 py-3"><option value="nome">Ordenar por Nome</option><option value="custo-asc">Menor Custo</option><option value="custo-desc">Maior Custo</option><option value="lucro-desc">Mais Lucrativas</option></select>
+                </div>
+                <div id="lista-receitas" class="grid md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <section id="tela-produtos-venda" class="tela hidden">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 mb-6 sm:mb-8 fade-in">
+                <div class="card p-3 sm:p-4 text-center"><i class="fas fa-boxes text-xl sm:text-2xl text-blue-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-total-produtos">0</div><div class="text-xs text-gray-600">Total de Produtos</div></div>
+                <div class="card p-3 sm:p-4 text-center"><i class="fas fa-coins text-xl sm:text-2xl text-amber-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-valor-estoque">R$ 0</div><div class="text-xs text-gray-600">Valor Total em Estoque (custo)</div></div>
+                <div class="card p-3 sm:p-4 text-center"><i class="fas fa-chart-line text-xl sm:text-2xl text-green-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-potencial-venda">R$ 0</div><div class="text-xs text-gray-600">Potencial de Venda</div></div>
+                <div class="card p-3 sm:p-4 text-center"><i class="fas fa-hand-holding-usd text-xl sm:text-2xl text-purple-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-lucro-potencial">R$ 0</div><div class="text-xs text-gray-600">Lucro Potencial</div></div>
+                <div class="card p-3 sm:p-4 text-center"><i class="fas fa-exclamation-triangle text-xl sm:text-2xl text-red-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-sem-estoque">0</div><div class="text-xs text-gray-600">Sem Estoque</div></div>
+                <div class="card p-3 sm:p-4 text-center"><i class="fas fa-exclamation-circle text-xl sm:text-2xl text-yellow-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-estoque-baixo">0</div><div class="text-xs text-gray-600">Estoque Baixo</div></div>
+            </div>
+            <div class="card p-5 sm:p-8">
+                <div class="flex justify-between items-center mb-6"><h2 class="text-xl sm:text-2xl font-bold">Produtos para Venda <span class="text-lg text-gray-500" id="total-produtos-venda">(0)</span></h2></div>
+                <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                    <input type="text" id="busca-produto-venda" oninput="filtrarProdutosVenda()" placeholder="🔍 Buscar produto..." class="input-field w-full sm:flex-1 rounded-xl px-4 py-3">
+                    <select id="ordem-produto-venda" onchange="filtrarProdutosVenda()" class="input-field w-full sm:w-auto rounded-xl px-4 py-3"><option value="nome">Ordenar por Nome</option><option value="lucro-desc">Mais Lucrativos</option><option value="margem-desc">Maior Margem</option><option value="estoque-asc">Menor Estoque</option><option value="estoque-desc">Maior Estoque</option></select>
+                </div>
+                <div id="lista-produtos-venda" class="space-y-4 max-h-[600px] overflow-y-auto"></div>
+            </div>
+        </section>
+
+        <section id="tela-backup" class="tela hidden">
+            <div class="max-w-2xl mx-auto">
+                <div class="card p-5 sm:p-8 text-center">
+                    <i class="fab fa-github text-4xl sm:text-5xl text-gray-700 mb-4"></i>
+                    <h2 class="text-xl sm:text-2xl font-bold mb-4">Backup Compartilhado</h2>
+                    <p class="text-gray-600 mb-2">Sincronização automática ao abrir a página + backup a cada ação.</p>
+                    <p class="text-gray-500 mb-6 text-sm">O último dispositivo a salvar define o arquivo completo.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                        <button onclick="forcarBackupAgora()" class="btn bg-green-500 hover:bg-green-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2"><i class="fas fa-cloud-upload-alt text-xl"></i> Salvar Agora</button>
+                        <button onclick="restaurarDoGitHub()" class="btn bg-purple-500 hover:bg-purple-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2"><i class="fas fa-sync-alt text-xl"></i> Sincronizar Dados</button>
+                        <button onclick="abrirModalConfig()" class="btn bg-gray-500 hover:bg-gray-600 text-white py-4 rounded-xl font-bold shadow-md flex flex-col items-center gap-2"><i class="fas fa-cog text-xl"></i> Configurar</button>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4 text-left text-sm">
+                        <div class="flex items-center gap-2 mb-1"><span class="font-semibold">Status:</span><span id="backup-status" class="text-gray-500">Não configurado</span></div>
+                        <div class="flex items-center gap-2"><span class="font-semibold">Último backup:</span><span id="backup-ultimo" class="text-gray-500">-</span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let produtos = JSON.parse(localStorage.getItem('produtos')) || [];
+        let receitas = JSON.parse(localStorage.getItem('receitas')) || [];
+        let produtosVenda = JSON.parse(localStorage.getItem('produtosVenda')) || [];
+        let movimentacoesEstoque = JSON.parse(localStorage.getItem('movimentacoesEstoque')) || [];
+        let ingredientesTemp = [];
+        let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
         let autoBackupInterval = null;
 
         function mostrarToast(mensagem, tipo = 'success') {
