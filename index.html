@@ -252,6 +252,32 @@
         </div>
     </div>
 
+    <!-- Modal Editar Produto -->
+    <div id="modal-produto-venda" class="fixed inset-0 z-40 hidden items-center justify-center">
+        <div class="modal-overlay absolute inset-0" onclick="fecharModalProdutoVenda()"></div>
+        <div class="card p-5 sm:p-8 relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl sm:text-2xl font-bold"><i class="fas fa-edit text-blue-500"></i> Editar Produto</h2>
+                <button onclick="fecharModalProdutoVenda()" class="text-gray-500 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="form-produto-venda" onsubmit="salvarProdutoVenda(event)" novalidate class="space-y-4">
+                <input type="hidden" id="pv-id-produto">
+                <div><label class="block text-sm font-semibold mb-2">Nome do Produto</label><input required id="pv-nome" class="input-field w-full rounded-xl px-4 py-3"></div>
+                <div><label class="block text-sm font-semibold mb-2">Preço de Venda Unitário (R$)</label><input required type="number" step="any" min="0" id="pv-preco" class="input-field w-full rounded-xl px-4 py-3"></div>
+                <div><label class="block text-sm font-semibold mb-2">Descrição</label><textarea id="pv-descricao" rows="3" class="input-field w-full rounded-xl px-4 py-3" placeholder="Conte um pouco sobre esse produto..."></textarea></div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2"><i class="fab fa-instagram mr-1"></i> Link do Instagram (foto do produto)</label>
+                    <input type="url" id="pv-instagram" class="input-field w-full rounded-xl px-4 py-3" placeholder="https://www.instagram.com/p/..." oninput="atualizarPreviewInstagram()">
+                    <p class="text-xs text-gray-500 mt-1">Cole o link de um post público. Nem sempre a prévia carrega, mas o link fica salvo e clicável.</p>
+                    <div id="pv-instagram-preview" class="mt-3 hidden">
+                        <img id="pv-instagram-img" class="w-full max-h-56 object-cover rounded-xl border" onerror="document.getElementById('pv-instagram-preview').classList.add('hidden')">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg"><i class="fas fa-save mr-2"></i> Salvar Produto</button>
+            </form>
+        </div>
+    </div>
+
     <div class="container mx-auto px-3 sm:px-4 py-6 max-w-7xl overflow-x-hidden">
         <!-- Navegação -->
         <div class="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
@@ -841,7 +867,9 @@
                     estoque: 0,
                     custoTotal: custoTotal,
                     rendimento: rendimento,
-                    custoUnitario: custoUnitario
+                    custoUnitario: custoUnitario,
+                    descricao: '',
+                    instagramLink: ''
                 };
                 produtosVenda.push(novoProduto);
                 mostrarToast('Receita e produto criados!', 'success');
@@ -980,20 +1008,65 @@
             return { cor:'green', texto:'Em estoque' };
         }
 
+        function urlImagemInstagram(link) {
+            if(!link) return '';
+            let url = link.trim().split('?')[0].split('#')[0];
+            if(!url) return '';
+            if(!url.endsWith('/')) url += '/';
+            return url + 'media/?size=l';
+        }
+
+        function atualizarPreviewInstagram() {
+            const link = document.getElementById('pv-instagram').value.trim();
+            const preview = document.getElementById('pv-instagram-preview');
+            const img = document.getElementById('pv-instagram-img');
+            const src = urlImagemInstagram(link);
+            if(!src) { preview.classList.add('hidden'); img.src = ''; return; }
+            img.src = src;
+            preview.classList.remove('hidden');
+        }
+
         function editarProdutoVenda(id) {
             const pv = produtosVenda.find(p => p.id===id);
             if(!pv) return;
-            const novoNome = prompt('Nome do Produto:', pv.nome);
-            if(novoNome===null) return;
-            const novoPreco = prompt('Preço de Venda Unitário (R$):', pv.precoVenda);
-            if(novoPreco===null) return;
-            const preco = parseFloat(novoPreco);
+            document.getElementById('pv-id-produto').value = pv.id;
+            document.getElementById('pv-nome').value = pv.nome;
+            document.getElementById('pv-preco').value = (pv.precoVenda||0).toFixed(2);
+            document.getElementById('pv-descricao').value = pv.descricao || '';
+            document.getElementById('pv-instagram').value = pv.instagramLink || '';
+            atualizarPreviewInstagram();
+            abrirModalProdutoVenda();
+        }
+
+        function abrirModalProdutoVenda() {
+            document.getElementById('modal-produto-venda').classList.remove('hidden');
+            document.getElementById('modal-produto-venda').classList.add('flex');
+            bloquearScrollPagina();
+        }
+
+        function fecharModalProdutoVenda() {
+            document.getElementById('modal-produto-venda').classList.add('hidden');
+            document.getElementById('modal-produto-venda').classList.remove('flex');
+            liberarScrollPagina();
+        }
+
+        function salvarProdutoVenda(event) {
+            event.preventDefault();
+            const id = document.getElementById('pv-id-produto').value;
+            const pv = produtosVenda.find(p => p.id===id);
+            if(!pv) return;
+            const nome = document.getElementById('pv-nome').value.trim();
+            const preco = parseFloat(document.getElementById('pv-preco').value);
+            if(!nome) { mostrarToast('Informe o nome do produto', 'error'); return; }
             if(isNaN(preco) || preco<0) { mostrarToast('Preço inválido!', 'error'); return; }
-            pv.nome = novoNome.trim() || pv.nome;
+            pv.nome = nome;
             pv.precoVenda = preco;
+            pv.descricao = document.getElementById('pv-descricao').value.trim();
+            pv.instagramLink = document.getElementById('pv-instagram').value.trim();
             salvarDados();
             listarProdutosVenda();
             atualizarDashboard();
+            fecharModalProdutoVenda();
             mostrarToast('Produto atualizado!', 'success');
         }
 
@@ -1098,15 +1171,20 @@
                 const statusCor = status.cor==='green'?'bg-green-500':status.cor==='yellow'?'bg-yellow-500':'bg-red-500';
                 return `<div class="bg-gray-50 rounded-xl p-4 sm:p-6 border hover:border-amber-300 overflow-hidden">
                     <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
-                        <div class="flex-1 min-w-[140px]">
-                            <div class="flex flex-wrap items-center gap-2 mb-1">
-                                <h3 class="font-bold text-lg break-words">${pv.nome}</h3>
-                                <span class="text-xs px-2 py-1 rounded-full font-medium ${status.cor==='green'?'bg-green-100 text-green-700':status.cor==='yellow'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}"><span class="status-dot ${statusCor}"></span>${status.texto}</span>
+                        <div class="flex gap-3 flex-1 min-w-[140px]">
+                            ${pv.instagramLink ? `<img src="${urlImagemInstagram(pv.instagramLink)}" onerror="this.remove()" class="w-16 h-16 rounded-xl object-cover border flex-shrink-0">` : ''}
+                            <div class="flex-1 min-w-[100px]">
+                                <div class="flex flex-wrap items-center gap-2 mb-1">
+                                    <h3 class="font-bold text-lg break-words">${pv.nome}</h3>
+                                    <span class="text-xs px-2 py-1 rounded-full font-medium ${status.cor==='green'?'bg-green-100 text-green-700':status.cor==='yellow'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}"><span class="status-dot ${statusCor}"></span>${status.texto}</span>
+                                </div>
+                                <div class="text-sm text-gray-600"><i class="fas fa-receipt mr-1"></i> Receita: ${pv.rendimento} porções <span class="mx-2">•</span> <i class="fas fa-boxes mr-1"></i> Estoque: ${pv.estoque||0} un</div>
+                                ${pv.descricao ? `<p class="text-sm text-gray-500 mt-1 break-words">${pv.descricao}</p>` : ''}
                             </div>
-                            <div class="text-sm text-gray-600"><i class="fas fa-receipt mr-1"></i> Receita: ${pv.rendimento} porções <span class="mx-2">•</span> <i class="fas fa-boxes mr-1"></i> Estoque: ${pv.estoque||0} un</div>
                         </div>
                         <div class="flex gap-1 flex-wrap">
                             <button onclick="editarProdutoVenda('${pv.id}')" class="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm"><i class="fas fa-edit"></i></button>
+                            ${pv.instagramLink ? `<a href="${pv.instagramLink}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 text-sm"><i class="fab fa-instagram"></i></a>` : ''}
                             <button onclick="abrirModalEntrada('${pv.id}')" class="px-2 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm"><i class="fas fa-plus"></i></button>
                             <button onclick="abrirModalSaida('${pv.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm"><i class="fas fa-minus"></i></button>
                             <button onclick="abrirModalHistorico('${pv.id}')" class="px-2 py-1 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 text-sm"><i class="fas fa-history"></i></button>
@@ -1131,6 +1209,7 @@
         document.getElementById('modal-historico').addEventListener('click', function(e) { if(e.target===this) fecharModalHistorico(); });
         document.getElementById('modal-config-github').addEventListener('click', function(e) { if(e.target===this) fecharModalConfig(); });
         document.getElementById('modal-receita').addEventListener('click', function(e) { if(e.target===this) fecharModalReceita(); });
+        document.getElementById('modal-produto-venda').addEventListener('click', function(e) { if(e.target===this) fecharModalProdutoVenda(); });
 
         async function inicializar() {
             // Tenta sincronizar do GitHub ao iniciar
@@ -1142,7 +1221,7 @@
             sincronizarTodosProdutosVenda();
             receitas.forEach(r => {
                 if(!produtosVenda.find(pv => pv.idReceita===r.id)) {
-                    produtosVenda.push({ id: gerarId(), idReceita: r.id, nome: r.nome, precoVenda: (r.custoUnitario||0)*2.5, estoque:0, custoTotal: r.custoTotal, rendimento: r.rendimento, custoUnitario: r.custoUnitario });
+                    produtosVenda.push({ id: gerarId(), idReceita: r.id, nome: r.nome, precoVenda: (r.custoUnitario||0)*2.5, estoque:0, custoTotal: r.custoTotal, rendimento: r.rendimento, custoUnitario: r.custoUnitario, descricao: '', instagramLink: '' });
                 }
             });
             produtosVenda = produtosVenda.filter(pv => receitas.some(r => r.id===pv.idReceita));
