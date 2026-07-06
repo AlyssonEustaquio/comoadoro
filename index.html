@@ -280,7 +280,7 @@
                 <div class="card p-5 sm:p-8">
                     <div class="flex justify-between items-center mb-6"><h2 class="text-xl sm:text-2xl font-bold">Ingredientes <span class="text-lg text-gray-500" id="total-produtos">(0)</span></h2></div>
                     <div class="mb-4"><input type="text" id="busca-produto" oninput="filtrarProdutos()" placeholder="🔍 Buscar ingrediente..." class="input-field w-full rounded-xl px-4 py-3"></div>
-                    <div id="lista-produtos" class="space-y-3 max-h-[500px] overflow-y-auto"></div>
+                    <div id="lista-produtos" class="space-y-3"></div>
                 </div>
             </div>
         </section>
@@ -298,7 +298,7 @@
                     <input type="text" id="busca-receita" oninput="filtrarReceitas()" placeholder="🔍 Buscar receita..." class="input-field w-full sm:flex-1 rounded-xl px-4 py-3">
                     <select id="ordem-receita" onchange="filtrarReceitas()" class="input-field w-full sm:w-auto rounded-xl px-4 py-3"><option value="nome">Ordenar por Nome</option><option value="custo-asc">Menor Custo</option><option value="custo-desc">Maior Custo</option><option value="lucro-desc">Mais Lucrativas</option></select>
                 </div>
-                <div id="lista-receitas" class="grid md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto"></div>
+                <div id="lista-receitas" class="grid md:grid-cols-2 gap-4"></div>
             </div>
         </section>
 
@@ -318,7 +318,7 @@
                     <input type="text" id="busca-produto-venda" oninput="filtrarProdutosVenda()" placeholder="🔍 Buscar produto..." class="input-field w-full sm:flex-1 rounded-xl px-4 py-3">
                     <select id="ordem-produto-venda" onchange="filtrarProdutosVenda()" class="input-field w-full sm:w-auto rounded-xl px-4 py-3"><option value="nome">Ordenar por Nome</option><option value="lucro-desc">Mais Lucrativos</option><option value="margem-desc">Maior Margem</option><option value="estoque-asc">Menor Estoque</option><option value="estoque-desc">Maior Estoque</option></select>
                 </div>
-                <div id="lista-produtos-venda" class="space-y-4 max-h-[600px] overflow-y-auto"></div>
+                <div id="lista-produtos-venda" class="space-y-4"></div>
             </div>
         </section>
 
@@ -579,16 +579,21 @@
         }
 
         // ==================== MODAL CONFIGURAÇÃO ====================
+        function bloquearScrollPagina() { document.body.style.overflow = 'hidden'; }
+        function liberarScrollPagina() { document.body.style.overflow = ''; }
+
         function abrirModalConfig() {
             document.getElementById('gh-token').value = ghConfig.token || '';
             document.getElementById('gh-repo').value = ghConfig.repo || '';
             document.getElementById('gh-path').value = ghConfig.path || 'buffet-dados.json';
             document.getElementById('modal-config-github').classList.remove('hidden');
             document.getElementById('modal-config-github').classList.add('flex');
+            bloquearScrollPagina();
         }
         function fecharModalConfig() {
             document.getElementById('modal-config-github').classList.add('hidden');
             document.getElementById('modal-config-github').classList.remove('flex');
+            liberarScrollPagina();
         }
         function salvarConfigFechar() {
             ghConfig.token = document.getElementById('gh-token').value.trim();
@@ -892,11 +897,13 @@
         function abrirModalReceita() {
             document.getElementById('modal-receita').classList.remove('hidden');
             document.getElementById('modal-receita').classList.add('flex');
+            bloquearScrollPagina();
         }
 
         function fecharModalReceita() {
             document.getElementById('modal-receita').classList.add('hidden');
             document.getElementById('modal-receita').classList.remove('flex');
+            liberarScrollPagina();
         }
 
         function filtrarReceitas() {
@@ -997,8 +1004,9 @@
             document.getElementById('entrada-obs').value = '';
             document.getElementById('modal-entrada').classList.remove('hidden');
             document.getElementById('modal-entrada').classList.add('flex');
+            bloquearScrollPagina();
         }
-        function fecharModalEntrada() { document.getElementById('modal-entrada').classList.add('hidden'); document.getElementById('modal-entrada').classList.remove('flex'); }
+        function fecharModalEntrada() { document.getElementById('modal-entrada').classList.add('hidden'); document.getElementById('modal-entrada').classList.remove('flex'); liberarScrollPagina(); }
         function confirmarEntrada(e) {
             e.preventDefault();
             const id = document.getElementById('entrada-id-produto').value;
@@ -1021,8 +1029,9 @@
             document.getElementById('saida-obs').value = '';
             document.getElementById('modal-saida').classList.remove('hidden');
             document.getElementById('modal-saida').classList.add('flex');
+            bloquearScrollPagina();
         }
-        function fecharModalSaida() { document.getElementById('modal-saida').classList.add('hidden'); document.getElementById('modal-saida').classList.remove('flex'); }
+        function fecharModalSaida() { document.getElementById('modal-saida').classList.add('hidden'); document.getElementById('modal-saida').classList.remove('flex'); liberarScrollPagina(); }
         function confirmarSaida(e) {
             e.preventDefault();
             const id = document.getElementById('saida-id-produto').value;
@@ -1057,8 +1066,9 @@
             }
             document.getElementById('modal-historico').classList.remove('hidden');
             document.getElementById('modal-historico').classList.add('flex');
+            bloquearScrollPagina();
         }
-        function fecharModalHistorico() { document.getElementById('modal-historico').classList.add('hidden'); document.getElementById('modal-historico').classList.remove('flex'); }
+        function fecharModalHistorico() { document.getElementById('modal-historico').classList.add('hidden'); document.getElementById('modal-historico').classList.remove('flex'); liberarScrollPagina(); }
 
         function filtrarProdutosVenda() {
             const busca = document.getElementById('busca-produto-venda').value.toLowerCase();
