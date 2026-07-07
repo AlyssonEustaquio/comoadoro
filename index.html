@@ -1179,22 +1179,20 @@
                 const valorEstoqueCusto = cu * (pv.estoque||0);
                 const status = getStatusEstoque(pv.estoque||0);
                 const statusCor = status.cor==='green'?'bg-green-500':status.cor==='yellow'?'bg-yellow-500':'bg-red-500';
-                return `<div class="bg-gray-50 rounded-xl p-4 sm:p-6 border hover:border-amber-300 overflow-hidden">
+                return `<div class="bg-gray-50 rounded-xl border hover:border-amber-300 overflow-hidden">
+                    ${pv.instagramLink ? `<a href="${pv.instagramLink}" target="_blank" rel="noopener noreferrer" class="block"><img src="${urlImagemInstagram(pv.instagramLink)}" onerror="this.closest('a').remove()" class="w-full h-40 sm:h-48 object-cover"></a>` : ''}
+                    <div class="p-4 sm:p-6">
                     <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
-                        <div class="flex gap-3 flex-1 min-w-[140px]">
-                            ${pv.instagramLink ? `<img src="${urlImagemInstagram(pv.instagramLink)}" onerror="this.remove()" class="w-16 h-16 rounded-xl object-cover border flex-shrink-0">` : ''}
-                            <div class="flex-1 min-w-[100px]">
-                                <div class="flex flex-wrap items-center gap-2 mb-1">
-                                    <h3 class="font-bold text-lg break-words">${pv.nome}</h3>
-                                    <span class="text-xs px-2 py-1 rounded-full font-medium ${status.cor==='green'?'bg-green-100 text-green-700':status.cor==='yellow'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}"><span class="status-dot ${statusCor}"></span>${status.texto}</span>
-                                </div>
-                                <div class="text-sm text-gray-600"><i class="fas fa-receipt mr-1"></i> Receita: ${pv.rendimento} porções <span class="mx-2">•</span> <i class="fas fa-boxes mr-1"></i> Estoque: ${pv.estoque||0} un</div>
-                                ${pv.descricao ? `<p class="text-sm text-gray-500 mt-1 break-words">${pv.descricao}</p>` : ''}
+                        <div class="flex-1 min-w-[140px]">
+                            <div class="flex flex-wrap items-center gap-2 mb-1">
+                                <h3 class="font-bold text-lg break-words">${pv.nome}</h3>
+                                <span class="text-xs px-2 py-1 rounded-full font-medium ${status.cor==='green'?'bg-green-100 text-green-700':status.cor==='yellow'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700'}"><span class="status-dot ${statusCor}"></span>${status.texto}</span>
                             </div>
+                            <div class="text-sm text-gray-600"><i class="fas fa-receipt mr-1"></i> Receita: ${pv.rendimento} porções <span class="mx-2">•</span> <i class="fas fa-boxes mr-1"></i> Estoque: ${pv.estoque||0} un</div>
+                            ${pv.descricao ? `<p class="text-sm text-gray-500 mt-1 break-words">${pv.descricao}</p>` : ''}
                         </div>
                         <div class="flex gap-1 flex-wrap">
                             <button onclick="editarProdutoVenda('${pv.id}')" class="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm"><i class="fas fa-edit"></i></button>
-                            ${pv.instagramLink ? `<a href="${pv.instagramLink}" target="_blank" rel="noopener noreferrer" class="px-2 py-1 bg-pink-50 text-pink-600 rounded-lg hover:bg-pink-100 text-sm"><i class="fab fa-instagram"></i></a>` : ''}
                             <button onclick="abrirModalEntrada('${pv.id}')" class="px-2 py-1 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 text-sm"><i class="fas fa-plus"></i></button>
                             <button onclick="abrirModalSaida('${pv.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm"><i class="fas fa-minus"></i></button>
                             <button onclick="abrirModalHistorico('${pv.id}')" class="px-2 py-1 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 text-sm"><i class="fas fa-history"></i></button>
@@ -1207,6 +1205,7 @@
                         <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Margem de Lucro</div><div class="font-semibold text-amber-600">${margem.toFixed(1)}%</div></div>
                     </div>
                     <div class="mt-3 bg-white rounded-xl p-3 flex flex-wrap justify-between items-center gap-1"><span class="text-sm text-gray-600">Valor Total em Estoque (custo)</span><span class="font-bold text-blue-600">${moeda(valorEstoqueCusto)}</span></div>
+                    </div>
                 </div>`;
             }).join('');
         }
