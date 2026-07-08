@@ -264,9 +264,17 @@
                 <input type="hidden" id="pv-id-produto">
                 <div><label class="block text-sm font-semibold mb-2">Nome do Produto</label><input required id="pv-nome" class="input-field w-full rounded-xl px-4 py-3"></div>
                 <div><label class="block text-sm font-semibold mb-2">Preço de Venda Unitário (R$)</label><input required type="number" step="any" min="0" id="pv-preco" class="input-field w-full rounded-xl px-4 py-3"></div>
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Foto do Produto</label>
+                    <input type="file" accept="image/*" id="pv-foto-input" onchange="carregarFotoProduto(event)" class="input-field w-full rounded-xl px-4 py-3">
+                    <div id="pv-foto-preview-wrap" class="mt-3 hidden relative">
+                        <img id="pv-foto-preview" class="w-full h-48 object-cover rounded-xl border">
+                        <button type="button" onclick="removerFotoProduto()" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-white shadow flex items-center justify-center text-red-600 hover:bg-red-50"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
                 <div><label class="block text-sm font-semibold mb-2">Descrição</label><textarea id="pv-descricao" rows="3" class="input-field w-full rounded-xl px-4 py-3" placeholder="Conte um pouco sobre esse produto..."></textarea></div>
                 <div>
-                    <label class="block text-sm font-semibold mb-2"><i class="fab fa-instagram mr-1"></i> Link do Instagram (foto do produto)</label>
+                    <label class="block text-sm font-semibold mb-2"><i class="fab fa-instagram mr-1"></i> Link do Instagram (opcional)</label>
                     <input type="url" id="pv-instagram" class="input-field w-full rounded-xl px-4 py-3" placeholder="https://www.instagram.com/p/..." oninput="atualizarPreviewInstagram()">
                     <div id="pv-instagram-preview" class="mt-3 hidden">
                         <img id="pv-instagram-img" class="w-full h-48 object-cover rounded-xl border" onerror="document.getElementById('pv-instagram-preview').classList.add('hidden')">
@@ -393,6 +401,7 @@
         let produtosVenda = JSON.parse(localStorage.getItem('produtosVenda')) || [];
         let movimentacoesEstoque = JSON.parse(localStorage.getItem('movimentacoesEstoque')) || [];
         let ingredientesTemp = [];
+        let fotoProdutoTemp = '';
 
         // Configurações do GitHub
         let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
@@ -414,10 +423,15 @@
 
         // ==================== PERSISTÊNCIA LOCAL ====================
         function salvarDados() {
-            localStorage.setItem('produtos', JSON.stringify(produtos));
-            localStorage.setItem('receitas', JSON.stringify(receitas));
-            localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
-            localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
+            try {
+                localStorage.setItem('produtos', JSON.stringify(produtos));
+                localStorage.setItem('receitas', JSON.stringify(receitas));
+                localStorage.setItem('produtosVenda', JSON.stringify(produtosVenda));
+                localStorage.setItem('movimentacoesEstoque', JSON.stringify(movimentacoesEstoque));
+            } catch(e) {
+                console.error('Erro ao salvar localmente:', e);
+                mostrarToast('Armazenamento cheio! Tente uma foto menor ou remova fotos antigas.', 'error');
+            }
             // Dispara backup imediato (assíncrono)
             backupParaGitHub().catch(e => console.warn('Falha no backup automático:', e));
         }
@@ -868,7 +882,8 @@
                     rendimento: rendimento,
                     custoUnitario: custoUnitario,
                     descricao: '',
-                    instagramLink: ''
+                    instagramLink: '',
+                    foto: ''
                 };
                 produtosVenda.push(novoProduto);
                 mostrarToast('Receita e produto criados!', 'success');
@@ -1025,6 +1040,91 @@
             preview.classList.remove('hidden');
         }
 
+        // ==================== FOTO DO PRODUTO (via GitHub, mesmo repo do backup) ====================
+        let fotoProdutoEnviando = false;
+
+        function redimensionarImagem(file, maxDim = 900, qualidade = 0.78) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error('Falha ao ler o arquivo'));
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error('Arquivo de imagem inválido'));
+                    img.onload = () => {
+                        let w = img.width, h = img.height;
+                        if(w > maxDim && w >= h) { h = Math.round(h * maxDim / w); w = maxDim; }
+                        else if(h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', qualidade));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function uploadImagemGitHub(dataUrlBase64, caminho) {
+            const conteudoBase64 = dataUrlBase64.split(',')[1];
+            const headers = { 'Authorization': `token ${ghConfig.token}`, 'Accept': 'application/vnd.github.v3+json' };
+            const url = `https://api.github.com/repos/${ghConfig.repo}/contents/${caminho}`;
+
+            let sha = null;
+            try {
+                const resp = await fetch(url, { headers });
+                if(resp.ok) { const info = await resp.json(); sha = info.sha; }
+                else if(resp.status !== 404) { throw new Error(`Erro ao acessar arquivo: ${resp.status}`); }
+            } catch(e) {
+                if(!e.message.includes('404')) throw e;
+            }
+
+            const body = { message: `Imagem produto - ${new Date().toLocaleString('pt-BR')}`, content: conteudoBase64, branch: 'main' };
+            if(sha) body.sha = sha;
+
+            const putResp = await fetch(url, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if(!putResp.ok) {
+                const errData = await putResp.json().catch(() => ({}));
+                throw new Error(errData.message || 'Erro ao enviar imagem');
+            }
+            const data = await putResp.json();
+            return data.content.download_url;
+        }
+
+        async function carregarFotoProduto(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+            if(!file.type.startsWith('image/')) { mostrarToast('Selecione um arquivo de imagem', 'error'); event.target.value = ''; return; }
+            if(!configGhOk()) { mostrarToast('Configure o GitHub primeiro, na aba Backup', 'warning'); event.target.value = ''; return; }
+
+            const produtoId = document.getElementById('pv-id-produto').value;
+            fotoProdutoEnviando = true;
+            mostrarToast('Enviando imagem...', 'info');
+
+            try {
+                const dataUrl = await redimensionarImagem(file);
+                const caminho = `imagens/${produtoId}.jpg`;
+                const urlFinal = await uploadImagemGitHub(dataUrl, caminho);
+                fotoProdutoTemp = `${urlFinal}?t=${Date.now()}`;
+                document.getElementById('pv-foto-preview').src = fotoProdutoTemp;
+                document.getElementById('pv-foto-preview-wrap').classList.remove('hidden');
+                mostrarToast('Imagem enviada!', 'success');
+            } catch(e) {
+                console.error(e);
+                mostrarToast('Falha ao enviar imagem: ' + e.message, 'error');
+                event.target.value = '';
+            } finally {
+                fotoProdutoEnviando = false;
+            }
+        }
+
+        function removerFotoProduto() {
+            fotoProdutoTemp = '';
+            document.getElementById('pv-foto-input').value = '';
+            document.getElementById('pv-foto-preview').src = '';
+            document.getElementById('pv-foto-preview-wrap').classList.add('hidden');
+        }
+
         function editarProdutoVenda(id) {
             const pv = produtosVenda.find(p => p.id===id);
             if(!pv) return;
@@ -1033,6 +1133,14 @@
             document.getElementById('pv-preco').value = (pv.precoVenda||0).toFixed(2);
             document.getElementById('pv-descricao').value = pv.descricao || '';
             document.getElementById('pv-instagram').value = pv.instagramLink || '';
+            document.getElementById('pv-foto-input').value = '';
+            fotoProdutoTemp = pv.foto || '';
+            if(fotoProdutoTemp) {
+                document.getElementById('pv-foto-preview').src = fotoProdutoTemp;
+                document.getElementById('pv-foto-preview-wrap').classList.remove('hidden');
+            } else {
+                document.getElementById('pv-foto-preview-wrap').classList.add('hidden');
+            }
             atualizarPreviewInstagram();
             abrirModalProdutoVenda();
         }
@@ -1051,6 +1159,7 @@
 
         function salvarProdutoVenda(event) {
             event.preventDefault();
+            if(fotoProdutoEnviando) { mostrarToast('Aguarde o envio da imagem terminar...', 'warning'); return; }
             const id = document.getElementById('pv-id-produto').value;
             const pv = produtosVenda.find(p => p.id===id);
             if(!pv) return;
@@ -1062,6 +1171,7 @@
             pv.precoVenda = preco;
             pv.descricao = document.getElementById('pv-descricao').value.trim();
             pv.instagramLink = document.getElementById('pv-instagram').value.trim();
+            pv.foto = fotoProdutoTemp || '';
             salvarDados();
             listarProdutosVenda();
             atualizarDashboard();
@@ -1169,7 +1279,7 @@
                 const status = getStatusEstoque(pv.estoque||0);
                 const statusCor = status.cor==='green'?'bg-green-500':status.cor==='yellow'?'bg-yellow-500':'bg-red-500';
                 return `<div class="bg-gray-50 rounded-xl border hover:border-amber-300 overflow-hidden">
-                    ${pv.instagramLink ? `<a href="${pv.instagramLink}" target="_blank" rel="noopener noreferrer" class="block"><img src="${urlImagemInstagram(pv.instagramLink)}" onerror="this.closest('a').remove()" class="w-full h-40 sm:h-48 object-cover"></a>` : ''}
+                    ${pv.foto ? `<img src="${pv.foto}" class="w-full h-40 sm:h-48 object-cover">` : pv.instagramLink ? `<a href="${pv.instagramLink}" target="_blank" rel="noopener noreferrer" class="block"><img src="${urlImagemInstagram(pv.instagramLink)}" onerror="this.closest('a').remove()" class="w-full h-40 sm:h-48 object-cover"></a>` : ''}
                     <div class="p-4 sm:p-6">
                     <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
                         <div class="flex-1 min-w-[140px]">
@@ -1219,7 +1329,7 @@
             sincronizarTodosProdutosVenda();
             receitas.forEach(r => {
                 if(!produtosVenda.find(pv => pv.idReceita===r.id)) {
-                    produtosVenda.push({ id: gerarId(), idReceita: r.id, nome: r.nome, precoVenda: (r.custoUnitario||0)*2.5, estoque:0, custoTotal: r.custoTotal, rendimento: r.rendimento, custoUnitario: r.custoUnitario, descricao: '', instagramLink: '' });
+                    produtosVenda.push({ id: gerarId(), idReceita: r.id, nome: r.nome, precoVenda: (r.custoUnitario||0)*2.5, estoque:0, custoTotal: r.custoTotal, rendimento: r.rendimento, custoUnitario: r.custoUnitario, descricao: '', instagramLink: '', foto: '' });
                 }
             });
             produtosVenda = produtosVenda.filter(pv => receitas.some(r => r.id===pv.idReceita));
