@@ -1065,6 +1065,37 @@
             return data.content.download_url;
         }
 
+        const cacheImagensProduto = {};
+
+        function extrairCaminhoImagem(valor) {
+            if(!valor) return '';
+            if(valor.startsWith('http')) {
+                // Compatibilidade com fotos salvas no formato antigo (URL completa)
+                const m = valor.match(/\/main\/(.+?)(\?|$)/);
+                return m ? m[1] : '';
+            }
+            return valor;
+        }
+
+        async function buscarImagemProdutoAutenticada(caminhoOuUrl) {
+            const caminho = extrairCaminhoImagem(caminhoOuUrl);
+            if(!caminho) return '';
+            if(cacheImagensProduto[caminho]) return cacheImagensProduto[caminho];
+            if(!configGhOk()) return '';
+            try {
+                const url = `https://api.github.com/repos/${ghConfig.repo}/contents/${caminho}`;
+                const resp = await fetch(url, { headers: { 'Authorization': `token ${ghConfig.token}`, 'Accept': 'application/vnd.github.v3+json' } });
+                if(!resp.ok) return '';
+                const data = await resp.json();
+                const dataUrl = `data:image/jpeg;base64,${data.content.replace(/\n/g, '')}`;
+                cacheImagensProduto[caminho] = dataUrl;
+                return dataUrl;
+            } catch(e) {
+                console.warn('Falha ao buscar imagem:', e);
+                return '';
+            }
+        }
+
         async function carregarFotoProduto(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -1082,8 +1113,9 @@
                 fotoProdutoEnviando = true;
                 mostrarToast('Enviando imagem...', 'info');
                 const caminho = `imagens/${produtoId}.jpg`;
-                const urlFinal = await uploadImagemGitHub(dataUrl, caminho);
-                fotoProdutoTemp = `${urlFinal}?t=${Date.now()}`;
+                await uploadImagemGitHub(dataUrl, caminho);
+                cacheImagensProduto[caminho] = dataUrl;
+                fotoProdutoTemp = caminho;
                 mostrarToast('Imagem enviada!', 'success');
             } catch(e) {
                 console.error(e);
@@ -1100,7 +1132,7 @@
             document.getElementById('pv-foto-preview-wrap').classList.add('hidden');
         }
 
-        function editarProdutoVenda(id) {
+        async function editarProdutoVenda(id) {
             const pv = produtosVenda.find(p => p.id===id);
             if(!pv) return;
             document.getElementById('pv-id-produto').value = pv.id;
@@ -1108,14 +1140,18 @@
             document.getElementById('pv-preco').value = (pv.precoVenda||0).toFixed(2);
             document.getElementById('pv-descricao').value = pv.descricao || '';
             document.getElementById('pv-foto-input').value = '';
-            fotoProdutoTemp = pv.foto || '';
-            if(fotoProdutoTemp) {
-                document.getElementById('pv-foto-preview').src = fotoProdutoTemp;
-                document.getElementById('pv-foto-preview-wrap').classList.remove('hidden');
-            } else {
-                document.getElementById('pv-foto-preview-wrap').classList.add('hidden');
-            }
+            fotoProdutoTemp = extrairCaminhoImagem(pv.foto) || '';
+            document.getElementById('pv-foto-preview-wrap').classList.add('hidden');
+            document.getElementById('pv-foto-preview').src = '';
             abrirModalProdutoVenda();
+            if(fotoProdutoTemp) {
+                const dataUrl = await buscarImagemProdutoAutenticada(fotoProdutoTemp);
+                // Confirma que o produto ainda é o mesmo (usuário não trocou/fechou o modal enquanto buscava)
+                if(document.getElementById('pv-id-produto').value === id && dataUrl) {
+                    document.getElementById('pv-foto-preview').src = dataUrl;
+                    document.getElementById('pv-foto-preview-wrap').classList.remove('hidden');
+                }
+            }
         }
 
         function abrirModalProdutoVenda() {
@@ -1251,7 +1287,7 @@
                 const status = getStatusEstoque(pv.estoque||0);
                 const statusCor = status.cor==='green'?'bg-green-500':status.cor==='yellow'?'bg-yellow-500':'bg-red-500';
                 return `<div class="bg-gray-50 rounded-xl border hover:border-amber-300 overflow-hidden">
-                    ${pv.foto ? `<img src="${pv.foto}" class="w-full h-40 sm:h-48 object-cover">` : ''}
+                    ${pv.foto ? `<div class="produto-foto-slot w-full h-40 sm:h-48 bg-gray-100 flex items-center justify-center" data-foto-caminho="${pv.foto}"><i class="fas fa-image text-gray-300 text-3xl"></i></div>` : ''}
                     <div class="p-4 sm:p-6">
                     <div class="flex flex-wrap justify-between items-start gap-3 mb-4">
                         <div class="flex-1 min-w-[140px]">
@@ -1279,6 +1315,22 @@
                     </div>
                 </div>`;
             }).join('');
+            carregarImagensProdutosVenda();
+        }
+
+        async function carregarImagensProdutosVenda() {
+            const slots = [...document.querySelectorAll('#lista-produtos-venda .produto-foto-slot')];
+            await Promise.all(slots.map(async slot => {
+                const dataUrl = await buscarImagemProdutoAutenticada(slot.dataset.fotoCaminho);
+                if(dataUrl) {
+                    const img = document.createElement('img');
+                    img.className = 'w-full h-40 sm:h-48 object-cover';
+                    img.src = dataUrl;
+                    slot.replaceWith(img);
+                } else {
+                    slot.remove();
+                }
+            }));
         }
 
         function listarProdutosVenda() { renderizarProdutosVenda(); document.getElementById('busca-produto-venda').value=''; document.getElementById('ordem-produto-venda').value='nome'; }
