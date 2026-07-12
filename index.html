@@ -300,6 +300,7 @@
             <button onclick="mostrarAba('produtos')" id="aba-produtos" class="tab-active px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-lg transition-all flex items-center gap-2"><i class="fas fa-box"></i> Ingredientes</button>
             <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-book-open"></i> Receitas</button>
             <button onclick="mostrarAba('produtos-venda')" id="aba-produtos-venda" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-store"></i> Produtos</button>
+            <button onclick="mostrarAba('loja')" id="aba-loja" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-globe"></i> Loja</button>
             <button onclick="mostrarAba('backup')" id="aba-backup" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fab fa-github"></i> Backup</button>
         </div>
 
@@ -366,6 +367,21 @@
                     <select id="ordem-produto-venda" onchange="filtrarProdutosVenda()" class="input-field w-full sm:w-auto rounded-xl px-4 py-3"><option value="nome">Ordenar por Nome</option><option value="lucro-desc">Mais Lucrativos</option><option value="margem-desc">Maior Margem</option><option value="estoque-asc">Menor Estoque</option><option value="estoque-desc">Maior Estoque</option></select>
                 </div>
                 <div id="lista-produtos-venda" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- Loja -->
+        <section id="tela-loja" class="tela hidden">
+            <div class="card p-5 sm:p-8">
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                    <h2 class="text-xl sm:text-2xl font-bold"><i class="fas fa-globe text-blue-500"></i> Loja</h2>
+                    <button id="btn-gerar-loja" onclick="gerarLoja()" class="btn btn-primary px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-sm sm:text-base flex-shrink-0">
+                        <i class="fas fa-cloud-upload-alt"></i> Gerar loja.json
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">Gera um arquivo <code class="bg-gray-100 px-1.5 py-0.5 rounded">loja.json</code> só com nome, preço, descrição e foto de cada produto — sem custo, estoque ou outros dados internos — pronto pra usar no site de vendas.</p>
+                <div id="loja-resultado" class="hidden mb-4 text-sm bg-green-50 border border-green-200 rounded-xl p-3 break-words"></div>
+                <div id="lista-loja" class="grid md:grid-cols-2 gap-4"></div>
             </div>
         </section>
 
@@ -726,6 +742,7 @@
             if(botao) { botao.classList.add('tab-active'); botao.classList.remove('bg-white'); }
             if(aba === 'receitas') carregarSelectProdutos();
             if(aba === 'produtos-venda') { listarProdutosVenda(); atualizarDashboard(); }
+            if(aba === 'loja') renderizarLoja();
             if(aba === 'backup') atualizarStatusBackup();
         }
 
@@ -1060,8 +1077,7 @@
             });
         }
 
-        async function uploadImagemGitHub(dataUrlBase64, caminho) {
-            const conteudoBase64 = dataUrlBase64.split(',')[1];
+        async function uploadConteudoGitHub(base64Content, caminho, mensagem) {
             const headers = { 'Authorization': `token ${ghConfig.token}`, 'Accept': 'application/vnd.github.v3+json' };
             const url = `https://api.github.com/repos/${ghConfig.repo}/contents/${caminho}`;
 
@@ -1074,16 +1090,21 @@
                 if(!e.message.includes('404')) throw e;
             }
 
-            const body = { message: `Imagem produto - ${new Date().toLocaleString('pt-BR')}`, content: conteudoBase64, branch: 'main' };
+            const body = { message: mensagem || `Atualiza ${caminho} - ${new Date().toLocaleString('pt-BR')}`, content: base64Content, branch: 'main' };
             if(sha) body.sha = sha;
 
             const putResp = await fetch(url, { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
             if(!putResp.ok) {
                 const errData = await putResp.json().catch(() => ({}));
-                throw new Error(errData.message || 'Erro ao enviar imagem');
+                throw new Error(errData.message || 'Erro ao enviar arquivo');
             }
             const data = await putResp.json();
             return data.content.download_url;
+        }
+
+        async function uploadImagemGitHub(dataUrlBase64, caminho) {
+            const conteudoBase64 = dataUrlBase64.split(',')[1];
+            return uploadConteudoGitHub(conteudoBase64, caminho, `Imagem produto - ${new Date().toLocaleString('pt-BR')}`);
         }
 
         const cacheImagensProduto = {};
@@ -1339,19 +1360,23 @@
             carregarImagensProdutosVenda();
         }
 
-        async function carregarImagensProdutosVenda() {
-            const slots = [...document.querySelectorAll('#lista-produtos-venda .produto-foto-slot')];
+        async function carregarImagensEmSlots(containerId, imgClass) {
+            const slots = [...document.querySelectorAll(`#${containerId} .produto-foto-slot`)];
             await Promise.all(slots.map(async slot => {
                 const dataUrl = await buscarImagemProdutoAutenticada(slot.dataset.fotoCaminho);
                 if(dataUrl) {
                     const img = document.createElement('img');
-                    img.className = 'w-full h-40 sm:h-48 object-cover';
+                    img.className = imgClass;
                     img.src = dataUrl;
                     slot.replaceWith(img);
                 } else {
                     slot.remove();
                 }
             }));
+        }
+
+        async function carregarImagensProdutosVenda() {
+            await carregarImagensEmSlots('lista-produtos-venda', 'w-full h-40 sm:h-48 object-cover');
         }
 
         function listarProdutosVenda() { renderizarProdutosVenda(); document.getElementById('busca-produto-venda').value=''; document.getElementById('ordem-produto-venda').value='nome'; }
@@ -1452,7 +1477,55 @@
             resultado.classList.remove('hidden');
         }
 
-        // ==================== INICIALIZAÇÃO ====================
+        // ==================== LOJA (exportação pública) ====================
+        function renderizarLoja() {
+            const div = document.getElementById('lista-loja');
+            document.getElementById('loja-resultado').classList.add('hidden');
+            if(produtosVenda.length === 0) { div.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500"><i class="fas fa-store-slash text-6xl mb-4 text-gray-300"></i><p>Nenhum produto cadastrado</p></div>'; return; }
+            div.innerHTML = produtosVenda.map(pv => `
+                <div class="bg-gray-50 rounded-xl border overflow-hidden">
+                    ${pv.foto ? `<div class="produto-foto-slot w-full h-32 bg-gray-100 flex items-center justify-center" data-foto-caminho="${pv.foto}"><i class="fas fa-image text-gray-300 text-2xl"></i></div>` : ''}
+                    <div class="p-3">
+                        <div class="flex justify-between items-start gap-2 mb-1">
+                            <h3 class="font-bold break-words">${pv.nome}</h3>
+                            <span class="font-bold text-green-600 flex-shrink-0">${moeda(pv.precoVenda)}</span>
+                        </div>
+                        ${pv.descricao ? `<p class="text-sm text-gray-500 break-words">${pv.descricao}</p>` : '<p class="text-sm text-gray-400 italic">Sem descrição</p>'}
+                    </div>
+                </div>`).join('');
+            carregarImagensEmSlots('lista-loja', 'w-full h-32 object-cover');
+        }
+
+        async function gerarLoja() {
+            if(!configGhOk()) { mostrarToast('Configure o GitHub primeiro, na aba Backup', 'warning'); return; }
+            if(produtosVenda.length === 0) { mostrarToast('Nenhum produto cadastrado ainda', 'warning'); return; }
+
+            const btn = document.getElementById('btn-gerar-loja');
+            btn.disabled = true;
+            mostrarToast('Gerando loja.json...', 'info');
+
+            try {
+                const itens = await Promise.all(produtosVenda.map(async pv => ({
+                    nome: pv.nome,
+                    preco: pv.precoVenda,
+                    descricao: pv.descricao || '',
+                    imagem: pv.foto ? await buscarImagemProdutoAutenticada(pv.foto) : ''
+                })));
+
+                const jsonStr = JSON.stringify(itens, null, 2);
+                const url = await uploadConteudoGitHub(stringToBase64(jsonStr), 'loja.json', `Atualiza loja.json - ${new Date().toLocaleString('pt-BR')}`);
+
+                mostrarToast('loja.json gerado e enviado!', 'success');
+                const resultado = document.getElementById('loja-resultado');
+                resultado.innerHTML = `<i class="fas fa-check-circle text-green-600 mr-1"></i> Enviado! <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">${url}</a>`;
+                resultado.classList.remove('hidden');
+            } catch(e) {
+                console.error(e);
+                mostrarToast('Falha ao gerar loja.json: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
         document.getElementById('modal-entrada').addEventListener('click', function(e) { if(e.target===this) fecharModalEntrada(); });
         document.getElementById('modal-saida').addEventListener('click', function(e) { if(e.target===this) fecharModalSaida(); });
         document.getElementById('modal-historico').addEventListener('click', function(e) { if(e.target===this) fecharModalHistorico(); });
