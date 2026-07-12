@@ -376,10 +376,23 @@
                 <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                     <h2 class="text-xl sm:text-2xl font-bold"><i class="fas fa-globe text-blue-500"></i> Loja</h2>
                     <button id="btn-gerar-loja" onclick="gerarLoja()" class="btn btn-primary px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-sm sm:text-base flex-shrink-0">
-                        <i class="fas fa-cloud-upload-alt"></i> Gerar loja.json
+                        <i class="fas fa-cloud-upload-alt"></i> Gerar e Enviar
                     </button>
                 </div>
-                <p class="text-sm text-gray-600 mb-4">Gera um arquivo <code class="bg-gray-100 px-1.5 py-0.5 rounded">loja.json</code> só com nome, preço, descrição e foto de cada produto — sem custo, estoque ou outros dados internos — pronto pra usar no site de vendas.</p>
+                <p class="text-sm text-gray-600 mb-4">Gera um arquivo só com nome, preço, descrição e foto de cada produto — sem custo, estoque ou outros dados internos — pronto pra usar no site de vendas.</p>
+                <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                    <p class="text-xs font-semibold text-blue-800 mb-2"><i class="fas fa-map-marker-alt mr-1"></i> Onde enviar</p>
+                    <div class="grid sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium mb-1">Repositório (usuario/repo)</label>
+                            <input type="text" id="loja-repo" class="input-field w-full rounded-lg px-3 py-2 text-sm" placeholder="deixe vazio p/ usar o do Backup">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium mb-1">Caminho do arquivo</label>
+                            <input type="text" id="loja-path" class="input-field w-full rounded-lg px-3 py-2 text-sm" placeholder="loja.json">
+                        </div>
+                    </div>
+                </div>
                 <div id="loja-resultado" class="hidden mb-4 text-sm bg-green-50 border border-green-200 rounded-xl p-3 break-words"></div>
                 <div id="lista-loja" class="grid md:grid-cols-2 gap-4"></div>
             </div>
@@ -435,6 +448,7 @@
 
         // Configurações do GitHub
         let ghConfig = JSON.parse(localStorage.getItem('gh_config')) || { token: '', repo: '', path: 'buffet-dados.json' };
+        let lojaConfig = JSON.parse(localStorage.getItem('loja_config')) || { repo: '', path: 'loja.json' };
 
         // Auto-backup interval (1 hora)
         let autoBackupInterval = null;
@@ -1077,9 +1091,10 @@
             });
         }
 
-        async function uploadConteudoGitHub(base64Content, caminho, mensagem) {
+        async function uploadConteudoGitHub(base64Content, caminho, mensagem, repo) {
+            const repoAlvo = repo || ghConfig.repo;
             const headers = { 'Authorization': `token ${ghConfig.token}`, 'Accept': 'application/vnd.github.v3+json' };
-            const url = `https://api.github.com/repos/${ghConfig.repo}/contents/${caminho}`;
+            const url = `https://api.github.com/repos/${repoAlvo}/contents/${caminho}`;
 
             let sha = null;
             try {
@@ -1479,6 +1494,8 @@
 
         // ==================== LOJA (exportação pública) ====================
         function renderizarLoja() {
+            document.getElementById('loja-repo').value = lojaConfig.repo || '';
+            document.getElementById('loja-path').value = lojaConfig.path || 'loja.json';
             const div = document.getElementById('lista-loja');
             document.getElementById('loja-resultado').classList.add('hidden');
             if(produtosVenda.length === 0) { div.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500"><i class="fas fa-store-slash text-6xl mb-4 text-gray-300"></i><p>Nenhum produto cadastrado</p></div>'; return; }
@@ -1500,9 +1517,16 @@
             if(!configGhOk()) { mostrarToast('Configure o GitHub primeiro, na aba Backup', 'warning'); return; }
             if(produtosVenda.length === 0) { mostrarToast('Nenhum produto cadastrado ainda', 'warning'); return; }
 
+            lojaConfig.repo = document.getElementById('loja-repo').value.trim();
+            lojaConfig.path = document.getElementById('loja-path').value.trim() || 'loja.json';
+            localStorage.setItem('loja_config', JSON.stringify(lojaConfig));
+
+            const repoAlvo = lojaConfig.repo || ghConfig.repo;
+            const caminhoAlvo = lojaConfig.path;
+
             const btn = document.getElementById('btn-gerar-loja');
             btn.disabled = true;
-            mostrarToast('Gerando loja.json...', 'info');
+            mostrarToast(`Gerando ${caminhoAlvo}...`, 'info');
 
             try {
                 const itens = await Promise.all(produtosVenda.map(async pv => ({
@@ -1513,15 +1537,15 @@
                 })));
 
                 const jsonStr = JSON.stringify(itens, null, 2);
-                const url = await uploadConteudoGitHub(stringToBase64(jsonStr), 'loja.json', `Atualiza loja.json - ${new Date().toLocaleString('pt-BR')}`);
+                const url = await uploadConteudoGitHub(stringToBase64(jsonStr), caminhoAlvo, `Atualiza ${caminhoAlvo} - ${new Date().toLocaleString('pt-BR')}`, repoAlvo);
 
-                mostrarToast('loja.json gerado e enviado!', 'success');
+                mostrarToast('Enviado!', 'success');
                 const resultado = document.getElementById('loja-resultado');
-                resultado.innerHTML = `<i class="fas fa-check-circle text-green-600 mr-1"></i> Enviado! <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">${url}</a>`;
+                resultado.innerHTML = `<i class="fas fa-check-circle text-green-600 mr-1"></i> Enviado pra <strong>${repoAlvo}</strong>! <a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-600 underline">${url}</a>`;
                 resultado.classList.remove('hidden');
             } catch(e) {
                 console.error(e);
-                mostrarToast('Falha ao gerar loja.json: ' + e.message, 'error');
+                mostrarToast('Falha ao gerar arquivo: ' + e.message, 'error');
             } finally {
                 btn.disabled = false;
             }
