@@ -278,6 +278,22 @@
         </div>
     </div>
 
+    <!-- Modal Lista de Compras -->
+    <div id="modal-lista-compras" class="fixed inset-0 z-40 hidden items-center justify-center">
+        <div class="modal-overlay absolute inset-0" onclick="fecharModalListaCompras()"></div>
+        <div class="card p-5 sm:p-8 relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold"><i class="fas fa-list-check text-amber-500"></i> Lista de Compras</h2>
+                <button onclick="fecharModalListaCompras()" class="text-gray-500 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Informe quantas porções/unidades vai precisar de cada produto e gere a lista de ingredientes.</p>
+            <input type="text" id="busca-lista-compras" oninput="filtrarItensListaCompras()" placeholder="🔍 Buscar produto..." class="input-field w-full rounded-xl px-4 py-3 mb-4">
+            <div id="itens-lista-compras" class="space-y-2 max-h-[35vh] overflow-y-auto pr-1"></div>
+            <button type="button" onclick="gerarListaCompras()" class="btn btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg mt-4"><i class="fas fa-calculator mr-2"></i> Gerar Lista de Compras</button>
+            <div id="resultado-lista-compras" class="hidden"></div>
+        </div>
+    </div>
+
     <div class="container mx-auto px-3 sm:px-4 py-6 max-w-7xl overflow-x-hidden">
         <!-- Navegação -->
         <div class="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
@@ -339,7 +355,12 @@
                 <div class="card p-3 sm:p-4 text-center"><i class="fas fa-exclamation-circle text-xl sm:text-2xl text-yellow-500 mb-2"></i><div class="text-lg sm:text-2xl font-bold" id="dash-estoque-baixo">0</div><div class="text-xs text-gray-600">Estoque Baixo</div></div>
             </div>
             <div class="card p-5 sm:p-8">
-                <div class="flex justify-between items-center mb-6"><h2 class="text-xl sm:text-2xl font-bold">Produtos para Venda <span class="text-lg text-gray-500" id="total-produtos-venda">(0)</span></h2></div>
+                <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
+                    <h2 class="text-xl sm:text-2xl font-bold">Produtos para Venda <span class="text-lg text-gray-500" id="total-produtos-venda">(0)</span></h2>
+                    <button onclick="abrirModalListaCompras()" class="btn btn-primary px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-2 text-sm sm:text-base flex-shrink-0">
+                        <i class="fas fa-list-check"></i> Lista de Compras
+                    </button>
+                </div>
                 <div class="flex flex-col sm:flex-row gap-3 mb-4">
                     <input type="text" id="busca-produto-venda" oninput="filtrarProdutosVenda()" placeholder="🔍 Buscar produto..." class="input-field w-full sm:flex-1 rounded-xl px-4 py-3">
                     <select id="ordem-produto-venda" onchange="filtrarProdutosVenda()" class="input-field w-full sm:w-auto rounded-xl px-4 py-3"><option value="nome">Ordenar por Nome</option><option value="lucro-desc">Mais Lucrativos</option><option value="margem-desc">Maior Margem</option><option value="estoque-asc">Menor Estoque</option><option value="estoque-desc">Maior Estoque</option></select>
@@ -1335,6 +1356,102 @@
 
         function listarProdutosVenda() { renderizarProdutosVenda(); document.getElementById('busca-produto-venda').value=''; document.getElementById('ordem-produto-venda').value='nome'; }
 
+        // ==================== LISTA DE COMPRAS ====================
+        function unidadeBaseDe(unidade) {
+            if(unidade === 'g' || unidade === 'kg') return 'kg';
+            if(unidade === 'ml' || unidade === 'l') return 'l';
+            return 'un';
+        }
+
+        function formatarQtd(valor) {
+            if(!isFinite(valor)) return '0';
+            const arred = Math.round(valor * 1000) / 1000;
+            return arred.toString().replace('.', ',');
+        }
+
+        function abrirModalListaCompras() {
+            document.getElementById('busca-lista-compras').value = '';
+            renderizarItensListaCompras();
+            const resultado = document.getElementById('resultado-lista-compras');
+            resultado.classList.add('hidden');
+            resultado.innerHTML = '';
+            document.getElementById('modal-lista-compras').classList.remove('hidden');
+            document.getElementById('modal-lista-compras').classList.add('flex');
+            bloquearScrollPagina();
+        }
+
+        function fecharModalListaCompras() {
+            document.getElementById('modal-lista-compras').classList.add('hidden');
+            document.getElementById('modal-lista-compras').classList.remove('flex');
+            liberarScrollPagina();
+        }
+
+        function renderizarItensListaCompras() {
+            const div = document.getElementById('itens-lista-compras');
+            if(produtosVenda.length === 0) { div.innerHTML = '<p class="text-center text-gray-400 py-4">Nenhum produto cadastrado</p>'; return; }
+            div.innerHTML = [...produtosVenda].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(pv => `
+                <div class="flex justify-between items-center gap-3 bg-gray-50 rounded-xl p-3 item-lista-compras" data-nome="${pv.nome.toLowerCase()}">
+                    <span class="flex-1 min-w-0 truncate">${pv.nome}</span>
+                    <input type="number" min="0" step="1" placeholder="0" class="qtd-lista-compras input-field w-20 rounded-lg px-2 py-1.5 text-right" data-pv-id="${pv.id}">
+                </div>`).join('');
+        }
+
+        function filtrarItensListaCompras() {
+            const busca = document.getElementById('busca-lista-compras').value.toLowerCase();
+            document.querySelectorAll('#itens-lista-compras .item-lista-compras').forEach(el => {
+                el.style.display = el.dataset.nome.includes(busca) ? '' : 'none';
+            });
+        }
+
+        function gerarListaCompras() {
+            const inputs = [...document.querySelectorAll('.qtd-lista-compras')];
+            const necessidades = {};
+            let temQuantidade = false;
+
+            inputs.forEach(input => {
+                const qtdDesejada = parseFloat(input.value) || 0;
+                if(qtdDesejada <= 0) return;
+                const pv = produtosVenda.find(p => p.id === input.dataset.pvId);
+                if(!pv) return;
+                const receita = receitas.find(r => r.id === pv.idReceita);
+                if(!receita || !receita.rendimento || !receita.ingredientes || receita.ingredientes.length===0) return;
+                temQuantidade = true;
+                const fator = qtdDesejada / receita.rendimento;
+
+                receita.ingredientes.forEach(ing => {
+                    const qtdBase = paraBase(ing.quantidade, ing.unidade) * fator;
+                    if(!necessidades[ing.idProduto]) {
+                        necessidades[ing.idProduto] = { nome: ing.nome, quantidadeBase: 0, unidadeBase: unidadeBaseDe(ing.unidade) };
+                    }
+                    necessidades[ing.idProduto].quantidadeBase += qtdBase;
+                });
+            });
+
+            if(!temQuantidade) {
+                mostrarToast('Informe a quantidade de pelo menos um produto', 'warning');
+                return;
+            }
+
+            const itens = Object.entries(necessidades).map(([idProduto, dados]) => {
+                const produtoEstoque = produtos.find(p => p.id === idProduto);
+                const custoUnitBase = produtoEstoque ? precoPorUnidadeBase(produtoEstoque) : 0;
+                return { ...dados, custoTotal: dados.quantidadeBase * custoUnitBase };
+            }).sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+            const custoGeral = itens.reduce((t,i) => t + i.custoTotal, 0);
+
+            const resultado = document.getElementById('resultado-lista-compras');
+            resultado.innerHTML = `
+                <div class="border-t pt-4 mt-4">
+                    <h3 class="font-bold text-lg mb-3"><i class="fas fa-clipboard-list text-amber-500 mr-1"></i> Ingredientes Necessários</h3>
+                    <div class="space-y-2">
+                        ${itens.map(i => `<div class="flex justify-between items-center bg-gray-50 rounded-xl p-3"><span class="flex-1 min-w-0 truncate mr-2">${i.nome}</span><div class="text-right flex-shrink-0"><div class="font-bold">${formatarQtd(i.quantidadeBase)} ${i.unidadeBase}</div><div class="text-xs text-gray-500">${moeda(i.custoTotal)}</div></div></div>`).join('')}
+                    </div>
+                    <div class="flex justify-between font-bold text-lg mt-4 bg-amber-50 border border-amber-200 rounded-xl p-4"><span>Custo Total Estimado</span><span class="text-red-600">${moeda(custoGeral)}</span></div>
+                </div>`;
+            resultado.classList.remove('hidden');
+        }
+
         // ==================== INICIALIZAÇÃO ====================
         document.getElementById('modal-entrada').addEventListener('click', function(e) { if(e.target===this) fecharModalEntrada(); });
         document.getElementById('modal-saida').addEventListener('click', function(e) { if(e.target===this) fecharModalSaida(); });
@@ -1342,6 +1459,7 @@
         document.getElementById('modal-config-github').addEventListener('click', function(e) { if(e.target===this) fecharModalConfig(); });
         document.getElementById('modal-receita').addEventListener('click', function(e) { if(e.target===this) fecharModalReceita(); });
         document.getElementById('modal-produto-venda').addEventListener('click', function(e) { if(e.target===this) fecharModalProdutoVenda(); });
+        document.getElementById('modal-lista-compras').addEventListener('click', function(e) { if(e.target===this) fecharModalListaCompras(); });
 
         async function inicializar() {
             // Tenta sincronizar do GitHub ao iniciar
