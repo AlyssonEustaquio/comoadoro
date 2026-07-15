@@ -221,10 +221,10 @@
             <form id="form-receita" onsubmit="salvarReceita(event)" onkeydown="tratarEnterFormReceita(event)" novalidate class="space-y-4">
                 <input type="hidden" id="id-receita">
                 <div><label class="block text-sm font-semibold mb-2">Nome da Receita</label><input required id="nome-receita" class="input-field w-full rounded-xl px-4 py-3" placeholder="Ex: Bolo de Cenoura"></div>
-                <div><label class="block text-sm font-semibold mb-2">Rendimento (porções)</label><input required type="number" min="1" id="rendimento" value="1" class="input-field w-full rounded-xl px-4 py-3" oninput="atualizarPrecoSugerido()"></div>
+                <div><label class="block text-sm font-semibold mb-2">Rendimento (porções)</label><input required type="number" min="1" id="rendimento" value="1" class="input-field w-full rounded-xl px-4 py-3" oninput="atualizarCustoReceita()"></div>
                 <div class="border-t pt-4">
                     <h3 class="font-semibold mb-3">Adicionar Ingrediente</h3>
-                    <select id="ing-produto" class="input-field w-full rounded-xl px-4 py-3 mb-3"></select>
+                    <select id="ing-produto" onchange="preencherUnidadeIngrediente()" class="input-field w-full rounded-xl px-4 py-3 mb-3"></select>
                     <div class="grid grid-cols-2 gap-3">
                         <input type="number" step="0.001" min="0.001" id="ing-qtd" placeholder="Quantidade" class="input-field rounded-xl px-4 py-3">
                         <select id="ing-unidade" class="input-field rounded-xl px-4 py-3"><option value="kg">Quilos (kg)</option><option value="l">Litros (l)</option><option value="un">Unidades (un)</option></select>
@@ -236,19 +236,26 @@
                     <div class="flex justify-between font-bold text-lg"><span>Custo Total</span><span id="custo-total" class="text-red-600">R$ 0,00</span></div>
                     <div class="flex justify-between text-sm mt-2"><span>Custo por Porção</span><span id="custo-unitario" class="font-semibold">R$ 0,00</span></div>
                 </div>
-                <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-5 rounded-xl">
-                    <div><label class="block text-sm font-semibold mb-2">Margem de Lucro (%)</label><input type="number" id="margem-lucro" value="150" step="any" class="input-field w-full rounded-xl px-4 py-3" oninput="atualizarPrecoSugerido()"></div>
-                    <div class="flex justify-between items-center font-bold text-lg mt-3">
-                        <span>Preço Sugerido (porção)</span>
-                        <div class="flex items-center gap-1 text-green-600">
-                            <span>R$</span>
-                            <input type="number" id="preco-sugerido" value="0.00" min="0" step="any" oninput="atualizarMargemPorPreco()" class="input-field w-24 sm:w-28 rounded-lg px-2 py-1.5 text-right font-bold text-lg text-green-600">
-                        </div>
-                    </div>
-                    <div class="flex justify-between text-sm mt-2"><span>Lucro Estimado (total)</span><span id="lucro-estimado" class="font-semibold">R$ 0,00</span></div>
-                </div>
                 <button type="submit" class="btn btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg"><i class="fas fa-save mr-2"></i> Salvar Receita</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal Fundir Receitas -->
+    <div id="modal-fundir-receitas" class="fixed inset-0 z-40 hidden items-center justify-center">
+        <div class="modal-overlay absolute inset-0" onclick="fecharModalFundirReceitas()"></div>
+        <div class="card p-5 sm:p-8 relative z-10 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-bold"><i class="fas fa-code-merge text-purple-500"></i> Fundir Receitas</h2>
+                <button onclick="fecharModalFundirReceitas()" class="text-gray-500 hover:text-gray-700 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Escolha 2 ou mais receitas pra combinar os ingredientes em uma nova receita.</p>
+            <div id="checklist-fundir-receitas" class="space-y-2 max-h-[35vh] overflow-y-auto mb-4"></div>
+            <div class="border-t pt-4 space-y-4">
+                <div><label class="block text-sm font-semibold mb-2">Nome da Nova Receita</label><input id="fundir-nome" class="input-field w-full rounded-xl px-4 py-3" placeholder="Ex: Nhoque com Molho Branco"></div>
+                <div><label class="block text-sm font-semibold mb-2">Rendimento (porções)</label><input type="number" min="1" id="fundir-rendimento" value="1" class="input-field w-full rounded-xl px-4 py-3"></div>
+                <button type="button" onclick="confirmarFusaoReceitas()" class="btn btn-primary w-full py-4 rounded-xl font-bold text-lg shadow-lg"><i class="fas fa-code-merge mr-2"></i> Fundir Receitas</button>
+            </div>
         </div>
     </div>
 
@@ -296,7 +303,7 @@
 
     <div class="container mx-auto px-3 sm:px-4 py-6 max-w-7xl overflow-x-hidden">
         <!-- Navegação -->
-        <div class="flex flex-wrap gap-2 sm:gap-3 mb-6 sm:mb-8">
+        <div class="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 sm:py-4 mb-6 sm:mb-8 bg-amber-50/90 backdrop-blur-sm shadow-sm flex flex-wrap gap-2 sm:gap-3">
             <button onclick="mostrarAba('produtos')" id="aba-produtos" class="tab-active px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-lg transition-all flex items-center gap-2"><i class="fas fa-box"></i> Ingredientes</button>
             <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-book-open"></i> Receitas</button>
             <button onclick="mostrarAba('produtos-venda')" id="aba-produtos-venda" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-store"></i> Produtos</button>
@@ -331,11 +338,16 @@
         <!-- Receitas -->
         <section id="tela-receitas" class="tela hidden">
             <div class="card p-5 sm:p-8">
-                <div class="flex justify-between items-center mb-6">
+                <div class="flex justify-between items-center mb-6 gap-2">
                     <h2 class="text-xl sm:text-2xl font-bold">Receitas <span class="text-lg text-gray-500" id="total-receitas">(0)</span></h2>
-                    <button onclick="novaReceita()" class="btn btn-primary w-11 h-11 sm:w-12 sm:h-12 rounded-xl shadow-lg flex items-center justify-center flex-shrink-0" title="Nova Receita" aria-label="Nova Receita">
-                        <i class="fas fa-plus text-lg"></i>
-                    </button>
+                    <div class="flex gap-2 flex-shrink-0">
+                        <button onclick="abrirModalFundirReceitas()" class="btn bg-purple-500 hover:bg-purple-600 text-white w-11 h-11 sm:w-12 sm:h-12 rounded-xl shadow-lg flex items-center justify-center" title="Fundir Receitas" aria-label="Fundir Receitas">
+                            <i class="fas fa-code-merge text-lg"></i>
+                        </button>
+                        <button onclick="novaReceita()" class="btn btn-primary w-11 h-11 sm:w-12 sm:h-12 rounded-xl shadow-lg flex items-center justify-center" title="Nova Receita" aria-label="Nova Receita">
+                            <i class="fas fa-plus text-lg"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="flex flex-col sm:flex-row gap-3 mb-4">
                     <input type="text" id="busca-receita" oninput="filtrarReceitas()" placeholder="🔍 Buscar receita..." class="input-field w-full sm:flex-1 rounded-xl px-4 py-3">
@@ -394,7 +406,7 @@
                     </div>
                 </div>
                 <div id="loja-resultado" class="hidden mb-4 text-sm bg-green-50 border border-green-200 rounded-xl p-3 break-words"></div>
-                <div id="lista-loja" class="grid md:grid-cols-2 gap-4"></div>
+                <div id="lista-loja" class="grid grid-cols-1 gap-4"></div>
             </div>
         </section>
 
@@ -721,30 +733,23 @@
         function precoPorUnidadeBase(produto) { const qtdBase = paraBase(produto.quantidade, produto.unidade); return qtdBase > 0 ? produto.preco / qtdBase : 0; }
         function custoIngredienteReceita(ing) { const p = produtos.find(p => p.id === ing.idProduto); if(!p) return 0; return paraBase(ing.quantidade, ing.unidade) * precoPorUnidadeBase(p); }
 
-        function atualizarPrecoSugerido() {
+        function atualizarCustoReceita() {
             const custoTotal = ingredientesTemp.reduce((t, ing) => t + custoIngredienteReceita(ing), 0);
             const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
-            const margem = parseFloat(document.getElementById('margem-lucro').value) || 0;
             const custoUnitario = custoTotal / rendimento;
-            const precoSugerido = custoUnitario * (1 + margem / 100);
-            const lucroTotal = (precoSugerido * rendimento) - custoTotal;
             document.getElementById('custo-total').textContent = moeda(custoTotal);
             document.getElementById('custo-unitario').textContent = moeda(custoUnitario);
-            document.getElementById('preco-sugerido').value = precoSugerido.toFixed(2);
-            document.getElementById('lucro-estimado').textContent = moeda(lucroTotal);
         }
 
-        function atualizarMargemPorPreco() {
-            const custoTotal = ingredientesTemp.reduce((t, ing) => t + custoIngredienteReceita(ing), 0);
-            const rendimento = Math.max(1, parseFloat(document.getElementById('rendimento').value) || 1);
-            const custoUnitario = custoTotal / rendimento;
-            const precoSugerido = Math.max(0, parseFloat(document.getElementById('preco-sugerido').value) || 0);
-            const margem = custoUnitario > 0 ? ((precoSugerido / custoUnitario) - 1) * 100 : 0;
-            const lucroTotal = (precoSugerido * rendimento) - custoTotal;
-            document.getElementById('custo-total').textContent = moeda(custoTotal);
-            document.getElementById('custo-unitario').textContent = moeda(custoUnitario);
-            document.getElementById('margem-lucro').value = margem.toFixed(2);
-            document.getElementById('lucro-estimado').textContent = moeda(lucroTotal);
+        function preencherUnidadeIngrediente() {
+            const idProduto = document.getElementById('ing-produto').value;
+            const p = produtos.find(p => p.id === idProduto);
+            if(p) document.getElementById('ing-unidade').value = p.unidade;
+        }
+
+        function nomeIngredienteAtual(ing) {
+            const p = produtos.find(p => p.id === ing.idProduto);
+            return p ? p.nome : ing.nome;
         }
 
         function mostrarAba(aba) {
@@ -872,17 +877,17 @@
             document.getElementById('ing-qtd').value = '';
             document.getElementById('ing-produto').value = '';
             listarIngredientesTemp();
-            atualizarPrecoSugerido();
+            atualizarCustoReceita();
         }
 
-        function removerIngrediente(i) { ingredientesTemp.splice(i,1); listarIngredientesTemp(); atualizarPrecoSugerido(); }
+        function removerIngrediente(i) { ingredientesTemp.splice(i,1); listarIngredientesTemp(); atualizarCustoReceita(); }
 
         function listarIngredientesTemp() {
             const ul = document.getElementById('lista-ingredientes');
             if(ingredientesTemp.length===0) { ul.innerHTML = '<li class="text-gray-400 text-center py-4">Nenhum ingrediente</li>'; return; }
             ul.innerHTML = ingredientesTemp.map((ing,i) => `
                 <li class="flex justify-between items-center bg-white p-3 rounded-lg border">
-                    <div><span class="font-semibold">${ing.nome}</span> <span class="text-gray-600 ml-2">${ing.quantidade} ${ing.unidade}</span></div>
+                    <div><span class="font-semibold">${nomeIngredienteAtual(ing)}</span> <span class="text-gray-600 ml-2">${ing.quantidade} ${ing.unidade}</span></div>
                     <div class="flex items-center gap-3"><span class="text-sm text-gray-600">${moeda(custoIngredienteReceita(ing))}</span><button onclick="removerIngrediente(${i})" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button></div>
                 </li>`).join('');
         }
@@ -912,7 +917,6 @@
                     pv.custoTotal = custoTotal;
                     pv.rendimento = rendimento;
                     pv.custoUnitario = custoUnitario;
-                    pv.precoVenda = precoSugerido;
                 }
                 mostrarToast('Receita atualizada!', 'success');
             } else {
@@ -944,12 +948,11 @@
             document.getElementById('id-receita').value = r.id;
             document.getElementById('nome-receita').value = r.nome;
             document.getElementById('rendimento').value = r.rendimento;
-            document.getElementById('margem-lucro').value = 150;
             ingredientesTemp = JSON.parse(JSON.stringify(r.ingredientes));
             document.getElementById('titulo-receita').innerHTML = '<i class="fas fa-edit text-blue-500"></i> Editar Receita';
             carregarSelectProdutos();
             listarIngredientesTemp();
-            atualizarPrecoSugerido();
+            atualizarCustoReceita();
             abrirModalReceita();
         }
 
@@ -967,10 +970,9 @@
         function cancelarEdicaoReceita() {
             document.getElementById('form-receita').reset();
             document.getElementById('id-receita').value = '';
-            document.getElementById('margem-lucro').value = 150;
             ingredientesTemp = [];
             listarIngredientesTemp();
-            atualizarPrecoSugerido();
+            atualizarCustoReceita();
             document.getElementById('titulo-receita').innerHTML = '<i class="fas fa-plus-circle text-green-500"></i> Nova Receita';
         }
 
@@ -978,6 +980,90 @@
             cancelarEdicaoReceita();
             carregarSelectProdutos();
             abrirModalReceita();
+        }
+
+        // ==================== FUNDIR RECEITAS ====================
+        function abrirModalFundirReceitas() {
+            document.getElementById('fundir-nome').value = '';
+            document.getElementById('fundir-rendimento').value = '1';
+            renderizarChecklistFusao();
+            document.getElementById('modal-fundir-receitas').classList.remove('hidden');
+            document.getElementById('modal-fundir-receitas').classList.add('flex');
+            bloquearScrollPagina();
+        }
+
+        function fecharModalFundirReceitas() {
+            document.getElementById('modal-fundir-receitas').classList.add('hidden');
+            document.getElementById('modal-fundir-receitas').classList.remove('flex');
+            liberarScrollPagina();
+        }
+
+        function renderizarChecklistFusao() {
+            const div = document.getElementById('checklist-fundir-receitas');
+            if(receitas.length < 2) { div.innerHTML = '<p class="text-center text-gray-400 py-4">Você precisa de pelo menos 2 receitas cadastradas</p>'; return; }
+            div.innerHTML = [...receitas].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(r => `
+                <label class="flex items-center gap-3 bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-gray-100">
+                    <input type="checkbox" class="chk-fundir-receita w-5 h-5 flex-shrink-0" value="${r.id}" onchange="atualizarNomeFusaoSugerido()">
+                    <span class="flex-1">${r.nome}</span>
+                    <span class="text-sm text-gray-500">${r.rendimento} porções</span>
+                </label>`).join('');
+        }
+
+        function atualizarNomeFusaoSugerido() {
+            const marcadas = [...document.querySelectorAll('.chk-fundir-receita:checked')];
+            if(marcadas.length === 0) return;
+            if(!document.getElementById('fundir-nome').value.trim()) {
+                const nomes = marcadas.map(chk => { const r = receitas.find(rec => rec.id === chk.value); return r ? r.nome : ''; }).filter(Boolean);
+                document.getElementById('fundir-nome').value = nomes.join(' + ');
+            }
+            const primeira = receitas.find(r => r.id === marcadas[0].value);
+            if(primeira) document.getElementById('fundir-rendimento').value = primeira.rendimento;
+        }
+
+        function confirmarFusaoReceitas() {
+            const marcadas = [...document.querySelectorAll('.chk-fundir-receita:checked')].map(chk => chk.value);
+            if(marcadas.length < 2) { mostrarToast('Selecione pelo menos 2 receitas', 'warning'); return; }
+            const nome = document.getElementById('fundir-nome').value.trim();
+            const rendimento = parseInt(document.getElementById('fundir-rendimento').value);
+            if(!nome) { mostrarToast('Informe o nome da nova receita', 'error'); return; }
+            if(!rendimento || rendimento < 1) { mostrarToast('Rendimento inválido', 'error'); return; }
+            const dup = receitas.find(r => r.nome.toLowerCase()===nome.toLowerCase());
+            if(dup) { mostrarToast('Já existe uma receita com esse nome!', 'warning'); return; }
+
+            const ingredientesFundidos = {};
+            marcadas.forEach(idReceita => {
+                const r = receitas.find(rec => rec.id === idReceita);
+                if(!r) return;
+                r.ingredientes.forEach(ing => {
+                    const qtdBase = paraBase(ing.quantidade, ing.unidade);
+                    if(!ingredientesFundidos[ing.idProduto]) {
+                        ingredientesFundidos[ing.idProduto] = { idProduto: ing.idProduto, nome: nomeIngredienteAtual(ing), quantidadeBase: 0, unidadeBase: unidadeBaseDe(ing.unidade) };
+                    }
+                    ingredientesFundidos[ing.idProduto].quantidadeBase += qtdBase;
+                });
+            });
+
+            const novosIngredientes = Object.values(ingredientesFundidos).map(i => ({
+                idProduto: i.idProduto, nome: i.nome, quantidade: Math.round(i.quantidadeBase * 1000) / 1000, unidade: i.unidadeBase
+            }));
+
+            if(novosIngredientes.length === 0) { mostrarToast('As receitas selecionadas não têm ingredientes', 'error'); return; }
+
+            const custoTotal = novosIngredientes.reduce((t, ing) => t + custoIngredienteReceita(ing), 0);
+            const custoUnitario = custoTotal / rendimento;
+            const novaReceitaObj = { id: gerarId(), nome, rendimento, ingredientes: novosIngredientes, custoTotal, custoUnitario };
+            receitas.push(novaReceitaObj);
+
+            const precoSugerido = custoUnitario * 2.5;
+            produtosVenda.push({
+                id: gerarId(), idReceita: novaReceitaObj.id, nome, precoVenda: precoSugerido, estoque: 0,
+                custoTotal, rendimento, custoUnitario, descricao: '', foto: ''
+            });
+
+            salvarDados();
+            listarReceitas();
+            fecharModalFundirReceitas();
+            mostrarToast('Receitas fundidas com sucesso!', 'success');
         }
 
         function abrirModalReceita() {
@@ -1005,16 +1091,24 @@
             renderizarReceitas(filtradas);
         }
 
+        function calcularCustoReceitaAtual(receita) {
+            const custoTotal = (receita.ingredientes||[]).reduce((t, ing) => t + custoIngredienteReceita(ing), 0);
+            const rendimento = Math.max(1, receita.rendimento || 1);
+            return { custoTotal, custoUnitario: custoTotal / rendimento };
+        }
+
         function renderizarReceitas(lista = receitas) {
             const div = document.getElementById('lista-receitas');
             document.getElementById('total-receitas').textContent = `(${lista.length})`;
             if(lista.length===0) { div.innerHTML = '<div class="col-span-2 text-center py-12 text-gray-500"><i class="fas fa-receipt text-6xl mb-4 text-gray-300"></i><p>Nenhuma receita</p></div>'; return; }
             div.innerHTML = lista.map(r => {
+                const custoAtual = calcularCustoReceitaAtual(r);
                 return `<div class="card p-4 sm:p-6 border border-amber-100">
                     <div class="flex flex-wrap justify-between items-start gap-2 mb-4"><h3 class="font-bold text-lg flex-1 min-w-[100px] break-words">${r.nome}</h3><div class="flex gap-1"><button onclick="editarReceita('${r.id}')" class="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-sm"><i class="fas fa-edit"></i></button><button onclick="excluirReceita('${r.id}')" class="px-2 py-1 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm"><i class="fas fa-trash"></i></button></div></div>
                     <div class="text-sm text-gray-600 mb-3"><i class="fas fa-users mr-1"></i> ${r.rendimento} porções <span class="mx-2">•</span> <i class="fas fa-box mr-1"></i> ${r.ingredientes.length} ingredientes</div>
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <div class="flex justify-between"><span class="text-sm">Custo Total</span><span class="font-bold text-red-600">${moeda(r.custoTotal||0)}</span></div>
+                    <div class="bg-gray-50 rounded-xl p-3 space-y-1">
+                        <div class="flex justify-between"><span class="text-sm">Custo Total</span><span class="font-bold text-red-600">${moeda(custoAtual.custoTotal)}</span></div>
+                        <div class="flex justify-between"><span class="text-sm">Custo por Porção</span><span class="font-semibold">${moeda(custoAtual.custoUnitario)}</span></div>
                     </div>
                 </div>`;
             }).join('');
@@ -1332,15 +1426,19 @@
         }
 
         function renderizarProdutosVenda(lista = produtosVenda) {
+            const MARGEM_PADRAO = 2.5; // 150% de margem, referência padrão do app
             const div = document.getElementById('lista-produtos-venda');
             document.getElementById('total-produtos-venda').textContent = `(${lista.length})`;
             if(lista.length===0) { div.innerHTML = '<div class="text-center py-12 text-gray-500"><i class="fas fa-store-slash text-6xl mb-4 text-gray-300"></i><p>Nenhum produto</p></div>'; return; }
             div.innerHTML = lista.map(pv => {
-                const cu = pv.custoUnitario||0;
-                const pvenda = pv.precoVenda||0;
-                const lucroUn = pvenda - cu;
-                const margem = cu>0 ? (lucroUn/cu)*100 : 0;
-                const valorEstoqueCusto = cu * (pv.estoque||0);
+                const receita = receitas.find(r => r.id === pv.idReceita);
+                const custoAtual = receita ? calcularCustoReceitaAtual(receita) : { custoTotal: pv.custoTotal||0, custoUnitario: pv.custoUnitario||0 };
+                const custoPorcao = custoAtual.custoUnitario;
+                const precoSugerido = custoPorcao * MARGEM_PADRAO;
+                const valorComercializado = pv.precoVenda||0;
+                const margemSugerida = custoPorcao>0 ? ((precoSugerido/custoPorcao)-1)*100 : 0;
+                const margemComercializada = custoPorcao>0 ? ((valorComercializado/custoPorcao)-1)*100 : 0;
+                const valorEstoqueCusto = custoPorcao * (pv.estoque||0);
                 const status = getStatusEstoque(pv.estoque||0);
                 const statusCor = status.cor==='green'?'bg-green-500':status.cor==='yellow'?'bg-yellow-500':'bg-red-500';
                 return `<div class="bg-gray-50 rounded-xl border hover:border-amber-300 overflow-hidden">
@@ -1362,11 +1460,12 @@
                             <button onclick="abrirModalHistorico('${pv.id}')" class="px-2 py-1 bg-purple-50 text-purple-600 rounded-lg hover:bg-purple-100 text-sm"><i class="fas fa-history"></i></button>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Preço de Venda</div><div class="font-bold text-green-600">${moeda(pvenda)}</div></div>
-                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Custo Unitário</div><div class="font-semibold text-red-600">${moeda(cu)}</div></div>
-                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Lucro Unitário</div><div class="font-semibold text-purple-600">${moeda(lucroUn)}</div></div>
-                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Margem de Lucro</div><div class="font-semibold text-amber-600">${margem.toFixed(1)}%</div></div>
+                    <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Custo Porção</div><div class="font-semibold text-red-600">${moeda(custoPorcao)}</div></div>
+                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Sugestão Preço</div><div class="font-semibold text-amber-600">${moeda(precoSugerido)}</div></div>
+                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Valor Comercializado</div><div class="font-bold text-green-600">${moeda(valorComercializado)}</div></div>
+                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center"><div class="text-xs text-gray-600 mb-1">Margem Sugerida</div><div class="font-semibold text-amber-600">${margemSugerida.toFixed(1)}%</div></div>
+                        <div class="bg-white rounded-xl p-2 sm:p-3 text-center col-span-2 sm:col-span-1"><div class="text-xs text-gray-600 mb-1">Margem Comercializada</div><div class="font-semibold text-purple-600">${margemComercializada.toFixed(1)}%</div></div>
                     </div>
                     <div class="mt-3 bg-white rounded-xl p-3 flex flex-wrap justify-between items-center gap-1"><span class="text-sm text-gray-600">Valor Total em Estoque (custo)</span><span class="font-bold text-blue-600">${moeda(valorEstoqueCusto)}</span></div>
                     </div>
@@ -1555,6 +1654,7 @@
         document.getElementById('modal-historico').addEventListener('click', function(e) { if(e.target===this) fecharModalHistorico(); });
         document.getElementById('modal-config-github').addEventListener('click', function(e) { if(e.target===this) fecharModalConfig(); });
         document.getElementById('modal-receita').addEventListener('click', function(e) { if(e.target===this) fecharModalReceita(); });
+        document.getElementById('modal-fundir-receitas').addEventListener('click', function(e) { if(e.target===this) fecharModalFundirReceitas(); });
         document.getElementById('modal-produto-venda').addEventListener('click', function(e) { if(e.target===this) fecharModalProdutoVenda(); });
         document.getElementById('modal-lista-compras').addEventListener('click', function(e) { if(e.target===this) fecharModalListaCompras(); });
 
