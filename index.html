@@ -303,13 +303,20 @@
 
     <div class="container mx-auto px-3 sm:px-4 py-6 max-w-7xl overflow-x-hidden">
         <!-- Navegação -->
-        <div class="sticky top-0 z-30 -mx-3 sm:-mx-4 px-3 sm:px-4 py-3 sm:py-4 mb-6 sm:mb-8 bg-amber-50/90 backdrop-blur-sm shadow-sm flex flex-wrap gap-2 sm:gap-3">
-            <button onclick="mostrarAba('produtos')" id="aba-produtos" class="tab-active px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-lg transition-all flex items-center gap-2"><i class="fas fa-box"></i> Ingredientes</button>
-            <button onclick="mostrarAba('receitas')" id="aba-receitas" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-book-open"></i> Receitas</button>
-            <button onclick="mostrarAba('produtos-venda')" id="aba-produtos-venda" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-store"></i> Produtos</button>
-            <button onclick="mostrarAba('loja')" id="aba-loja" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fas fa-globe"></i> Loja</button>
-            <button onclick="mostrarAba('backup')" id="aba-backup" class="px-4 py-2 sm:px-6 sm:py-3 rounded-xl font-semibold text-sm sm:text-base shadow-md hover:shadow-lg transition-all bg-white flex items-center gap-2"><i class="fab fa-github"></i> Backup</button>
+        <div id="menu-nav-wrapper" class="fixed top-3 left-3 sm:top-4 sm:left-4 z-30">
+            <button onclick="alternarMenuNav()" id="btn-menu-nav" class="btn btn-primary w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-lg flex items-center justify-center" aria-label="Abrir menu" aria-expanded="false">
+                <i class="fas fa-ellipsis-vertical text-lg sm:text-xl"></i>
+            </button>
+            <div id="painel-menu-nav" class="hidden absolute left-0 mt-2 w-60 card p-2 space-y-1">
+                <button onclick="mostrarAba('produtos')" id="aba-produtos" class="tab-active w-full text-left px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all flex items-center gap-2"><i class="fas fa-box w-5"></i> Ingredientes</button>
+                <button onclick="mostrarAba('receitas')" id="aba-receitas" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all bg-white hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-book-open w-5"></i> Receitas</button>
+                <button onclick="mostrarAba('produtos-venda')" id="aba-produtos-venda" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all bg-white hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-store w-5"></i> Produtos</button>
+                <button onclick="mostrarAba('loja')" id="aba-loja" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all bg-white hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-globe w-5"></i> Loja</button>
+                <button onclick="mostrarAba('backup')" id="aba-backup" class="w-full text-left px-4 py-3 rounded-xl font-semibold text-sm sm:text-base transition-all bg-white hover:bg-gray-50 flex items-center gap-2"><i class="fab fa-github w-5"></i> Backup</button>
+            </div>
         </div>
+        <div class="h-14 sm:h-16 mb-4 sm:mb-6"></div>
+
 
         <!-- Ingredientes -->
         <section id="tela-produtos" class="tela fade-in">
@@ -752,6 +759,19 @@
             return p ? p.nome : ing.nome;
         }
 
+        function alternarMenuNav() {
+            const painel = document.getElementById('painel-menu-nav');
+            const btn = document.getElementById('btn-menu-nav');
+            const abrindo = painel.classList.contains('hidden');
+            painel.classList.toggle('hidden');
+            btn.setAttribute('aria-expanded', abrindo ? 'true' : 'false');
+        }
+
+        function fecharMenuNav() {
+            document.getElementById('painel-menu-nav').classList.add('hidden');
+            document.getElementById('btn-menu-nav').setAttribute('aria-expanded', 'false');
+        }
+
         function mostrarAba(aba) {
             document.querySelectorAll('.tela').forEach(t => t.classList.add('hidden'));
             document.querySelectorAll('[id^="aba-"]').forEach(b => { b.classList.remove('tab-active'); b.classList.add('bg-white'); });
@@ -763,6 +783,8 @@
             if(aba === 'produtos-venda') { listarProdutosVenda(); atualizarDashboard(); }
             if(aba === 'loja') renderizarLoja();
             if(aba === 'backup') atualizarStatusBackup();
+            fecharMenuNav();
+            window.scrollTo(0, 0);
         }
 
         // ==================== INGREDIENTES ====================
@@ -1655,6 +1677,10 @@
         document.getElementById('modal-config-github').addEventListener('click', function(e) { if(e.target===this) fecharModalConfig(); });
         document.getElementById('modal-receita').addEventListener('click', function(e) { if(e.target===this) fecharModalReceita(); });
         document.getElementById('modal-fundir-receitas').addEventListener('click', function(e) { if(e.target===this) fecharModalFundirReceitas(); });
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('menu-nav-wrapper');
+            if(wrapper && !wrapper.contains(e.target)) fecharMenuNav();
+        });
         document.getElementById('modal-produto-venda').addEventListener('click', function(e) { if(e.target===this) fecharModalProdutoVenda(); });
         document.getElementById('modal-lista-compras').addEventListener('click', function(e) { if(e.target===this) fecharModalListaCompras(); });
 
